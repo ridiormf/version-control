@@ -1,0 +1,57 @@
+{
+  "name": "@ridioricardo/version-control",
+  "version": "1.0.0",
+  "description": "Sistema inteligente de controle de versão que analisa commits e automatiza versionamento semântico (SemVer)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "version-control": "./bin/version-control.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepare": "yarn build",
+    "prepublishOnly": "yarn clean && yarn build",
+    "test": "echo \"Tests coming soon\" && exit 0",
+    "version": "node bin/version-control.js",
+    "version:test": "bash scripts/test-version.sh"
+  },
+  "keywords": [
+    "version",
+    "versioning",
+    "semver",
+    "semantic-versioning",
+    "changelog",
+    "git",
+    "release",
+    "version-control",
+    "npm",
+    "automation",
+    "ci-cd"
+  ],
+  "author": "Ridio Ricardo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ridioricardo/version-control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ridioricardo/version-control/issues"
+  },
+  "homepage": "https://github.com/ridioricardo/version-control#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {}
+}
