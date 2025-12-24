@@ -15,19 +15,47 @@ const {
   question,
   closeInterface,
 } = require("../dist/readline.js");
+const { checkForUpdates } = require("../dist/updateChecker.js");
+const { t, currentLanguage, isLanguageConfigured } = require("../dist/i18n.js");
+
+/**
+ * Show language info
+ */
+function showLanguageInfo() {
+  const source = isLanguageConfigured
+    ? t.configuredManually
+    : t.detectedFromSystem;
+  console.log(
+    `${colors.cyan}ℹ${colors.reset} ${t.currentLanguageIs} ${
+      colors.bold
+    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
+  );
+  console.log(
+    `  ${t.toChangeLanguage} ${colors.cyan}version-control config --lang <code>${colors.reset}`
+  );
+  console.log("");
+}
 
 async function main() {
+  // Check for updates (non-blocking)
+  checkForUpdates().catch(() => {
+    // Silently ignore errors
+  });
+
   console.log("");
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log(
-    `${colors.bold}${colors.cyan}              Smart Commit - Auto Message${colors.reset}`
+    `${colors.bold}${colors.cyan}              ${t.smartCommit}${colors.reset}`
   );
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log("");
+
+  // Show language info
+  showLanguageInfo();
 
   // Check for staged changes
   const stagedFiles = execSync("git diff --cached --name-only", {
@@ -35,17 +63,26 @@ async function main() {
   }).trim();
 
   if (!stagedFiles) {
-    console.log(`${colors.yellow}⚠${colors.reset} No staged files found.`);
+    console.log(`${colors.yellow}ℹ${colors.reset} ${t.noStagedFiles}`);
     console.log("");
-    console.log("Run: git add <files> before using smart commit");
+    console.log(`${colors.bold}${t.howToUse}${colors.reset}`);
+    console.log(`  1. ${t.makeChanges}`);
+    console.log(
+      `  2. ${t.stageFiles} ${colors.cyan}git add <files>${colors.reset}`
+    );
+    console.log(
+      `  3. ${t.runCommand} ${colors.cyan}yarn commit${colors.reset}`
+    );
     console.log("");
-    process.exit(1);
+    process.exit(0);
   }
 
   // Get staged changes
   const changes = getStagedChanges();
 
-  console.log(`${colors.bold}Staged files:${colors.reset} ${changes.length}`);
+  console.log(
+    `${colors.bold}${t.stagedFiles}${colors.reset} ${changes.length}`
+  );
   changes.slice(0, 10).forEach((change) => {
     const icon =
       change.status === "added"
@@ -60,27 +97,29 @@ async function main() {
   });
 
   if (changes.length > 10) {
-    console.log(`  ... and ${changes.length - 10} more file(s)`);
+    console.log(`  ... ${t.andMore} ${changes.length - 10} ${t.andMoreFiles}`);
   }
   console.log("");
 
   // Generate commit message
-  console.log(`${colors.bold}Analyzing changes...${colors.reset}`);
+  console.log(`${colors.bold}${t.analyzingChanges}${colors.reset}`);
   const suggestion = generateCommitMessage(changes);
 
   console.log("");
-  console.log(`${colors.bold}Generated commit message:${colors.reset}`);
+  console.log(`${colors.bold}${t.generatedMessage}${colors.reset}`);
   console.log(`${colors.green}${suggestion.fullMessage}${colors.reset}`);
   console.log("");
 
   // Show breakdown
-  console.log(`${colors.bold}Details:${colors.reset}`);
-  console.log(`  Type: ${colors.cyan}${suggestion.type}${colors.reset}`);
+  console.log(`${colors.bold}${t.details}${colors.reset}`);
+  console.log(`  ${t.type} ${colors.cyan}${suggestion.type}${colors.reset}`);
   if (suggestion.scope) {
-    console.log(`  Scope: ${colors.cyan}${suggestion.scope}${colors.reset}`);
+    console.log(
+      `  ${t.scope} ${colors.cyan}${suggestion.scope}${colors.reset}`
+    );
   }
   console.log(
-    `  Description: ${colors.cyan}${suggestion.description}${colors.reset}`
+    `  ${t.description} ${colors.cyan}${suggestion.description}${colors.reset}`
   );
   console.log("");
 
@@ -91,16 +130,19 @@ async function main() {
   while (true) {
     choice = await question(
       rl,
-      `${colors.bold}Options: [1] Commit [2] Edit [3] Cancel\nChoice:${colors.reset} `
+      `${colors.bold}${t.options} [1] ${t.optionCommit} [2] ${t.optionEdit} [3] ${t.optionCancel} (${t.defaultLabel}: 1)\n${t.choice}${colors.reset} `
     );
+
+    // Default to option 1 if empty
+    if (!choice || choice.trim() === "") {
+      choice = "1";
+    }
 
     if (choice === "1" || choice === "2" || choice === "3") {
       break;
     }
 
-    console.log(
-      `${colors.red}Invalid. Enter 1, 2, or 3${colors.reset}`
-    );
+    console.log(`${colors.red}${t.invalidEnter}${colors.reset}`);
   }
 
   let finalMessage = suggestion.fullMessage;
@@ -109,20 +151,18 @@ async function main() {
     console.log("");
     finalMessage = await question(
       rl,
-      `${colors.bold}Enter your commit message:${colors.reset} `
+      `${colors.bold}${t.enterCommitMessage}${colors.reset} `
     );
 
     if (!finalMessage.trim()) {
       console.log("");
-      console.log(
-        `${colors.red}Empty message. Commit cancelled.${colors.reset}`
-      );
+      console.log(`${colors.red}${t.emptyMessage}${colors.reset}`);
       await closeInterface(rl);
       process.exit(1);
     }
   } else if (choice === "3") {
     console.log("");
-    console.log(`${colors.yellow}Commit cancelled.${colors.reset}`);
+    console.log(`${colors.yellow}${t.commitCancelled}${colors.reset}`);
     await closeInterface(rl);
     process.exit(0);
   }
@@ -131,7 +171,7 @@ async function main() {
 
   // Execute commit
   console.log("");
-  console.log(`${colors.bold}Committing...${colors.reset}`);
+  console.log(`${colors.bold}${t.committing}${colors.reset}`);
 
   try {
     execSync(`git commit -m "${finalMessage.replace(/"/g, '\\"')}"`, {
@@ -141,7 +181,7 @@ async function main() {
 
     console.log("");
     console.log(
-      `${colors.green}${colors.bold}✓ Commit created successfully!${colors.reset}`
+      `${colors.green}${colors.bold}✓ ${t.commitSuccess}${colors.reset}`
     );
     console.log("");
 
@@ -149,7 +189,7 @@ async function main() {
     process.exit(0);
   } catch (error) {
     console.log("");
-    console.log(`${colors.red}✗ Failed to create commit${colors.reset}`);
+    console.log(`${colors.red}✗ ${t.commitFailed}${colors.reset}`);
     console.log("");
     process.exit(1);
   }

@@ -7,6 +7,7 @@ import {
   groupCommitsByType,
   removeDuplicates,
 } from "./changelog";
+import { t } from "./i18n";
 
 /**
  * Update version in package.json
@@ -21,7 +22,7 @@ export function updatePackageJson(
   const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
   packageJson.version = newVersion;
   fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + "\n");
-  console.log(`${colors.green}✓${colors.reset} package.json atualizado`);
+  console.log(`${colors.green}✓${colors.reset} ${t("packageJsonUpdated")}`);
 }
 
 /**
@@ -50,9 +51,9 @@ export function updateIndexFile(
         );
         fs.writeFileSync(indexPath, content);
         console.log(
-          `${colors.green}✓${colors.reset} ${path.basename(
-            indexPath
-          )} atualizado`
+          `${colors.green}✓${colors.reset} ${path.basename(indexPath)} ${
+            t("updated")
+          }`
         );
         return;
       }
@@ -76,7 +77,7 @@ export function updateChangelog(
   const changelogPath = path.join(projectRoot, "CHANGELOG.md");
 
   if (!fs.existsSync(changelogPath)) {
-    console.log(`${colors.yellow}⚠${colors.reset} CHANGELOG.md não encontrado`);
+    console.log(`${colors.yellow}⚠${colors.reset} ${t("changelogNotFound")}`);
     return;
   }
 
@@ -87,9 +88,7 @@ export function updateChangelog(
   const commits = getCommitsSinceLastTag();
 
   if (commits.length === 0) {
-    console.log(
-      `${colors.yellow}⚠${colors.reset} Nenhum commit novo encontrado`
-    );
+    console.log(`${colors.yellow}⚠${colors.reset} ${t("noNewCommits")}`);
     return;
   }
 
@@ -103,8 +102,8 @@ export function updateChangelog(
   const isFirstRelease = version === "1.0.0";
 
   if (isFirstRelease) {
-    newEntry += `\n### 🎉 Initial Release\n\n`;
-    newEntry += `Primeira versão pública do projeto.\n\n`;
+    newEntry += `\n### 🎉 ${t("initialRelease")}\n\n`;
+    newEntry += `${t("firstPublicVersion")}\n\n`;
   }
 
   // Add sections in order of importance
@@ -174,7 +173,7 @@ export function updateChangelog(
     lines.splice(insertIndex, 0, newEntry);
     fs.writeFileSync(changelogPath, lines.join("\n"));
     console.log(
-      `${colors.green}✓${colors.reset} CHANGELOG.md atualizado com ${commits.length} commit(s)`
+      `${colors.green}✓${colors.reset} ${t("changelogUpdated")} ${commits.length} ${t("commits")}`
     );
   }
 }

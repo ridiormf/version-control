@@ -55,5 +55,7 @@
     "@types/node": "^20.10.6",
     "typescript": "^5.3.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "i18next": "^25.7.3"
+  }
 }

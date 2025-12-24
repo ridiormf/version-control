@@ -64,7 +64,7 @@ export function getCommitsSinceLastTag(): CommitInfo[] {
  * @returns Parsed commit information
  */
 export function parseCommitMessage(hash: string, message: string): CommitInfo {
-  // Regex para Conventional Commits: type(scope): description
+  // Regex for Conventional Commits: type(scope): description
   const conventionalRegex = /^(\w+)(\(([^)]+)\))?(!)?:\s*(.+)$/;
   const match = message.match(conventionalRegex);
 
@@ -80,7 +80,7 @@ export function parseCommitMessage(hash: string, message: string): CommitInfo {
     };
   }
 
-  // Fallback: tenta identificar o tipo por palavras-chave
+  // Fallback: try to identify type by keywords
   const lowerMsg = message.toLowerCase();
   let type = "other";
 
@@ -175,14 +175,14 @@ export function removeDuplicates(entries: string[]): string[] {
   const unique = new Map<string, string>();
 
   for (const entry of entries) {
-    // Normaliza o texto para comparação
+    // Normalize text for comparison
     const normalized = entry
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
-    // Se já existe uma entrada muito similar, pula
+    // If a very similar entry already exists, skip it
     let isDuplicate = false;
     for (const [key] of unique) {
       const similarity = calculateSimilarity(normalized, key);

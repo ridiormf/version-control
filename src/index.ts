@@ -4,8 +4,8 @@
  * Version Control System - Main CLI
  * @version 1.0.0
  *
- * Sistema inteligente de controle de versão que analisa commits do Git
- * e automatiza o versionamento semântico (SemVer).
+ * Intelligent version control system that analyzes Git commits
+ * and automates semantic versioning (SemVer).
  */
 
 import { colors } from "./colors";
@@ -16,60 +16,162 @@ import { updatePackageJson, updateIndexFile, updateChangelog } from "./updater";
 import { createInterface, question, closeInterface } from "./readline";
 import { executeGitCommands } from "./gitCommands";
 import { VersionType } from "./types";
+import { checkForUpdates } from "./updateChecker";
+import {
+  t,
+  currentLanguage,
+  isLanguageConfigured,
+  getYesOptions,
+  getNoOptions,
+} from "./i18n";
+import { setLanguage, clearLanguage } from "./config";
+
+/**
+ * Show language info
+ */
+function showLanguageInfo(): void {
+  const source = isLanguageConfigured
+    ? t("configuredManually")
+    : t("detectedFromSystem");
+  console.log(
+    `${colors.cyan}ℹ${colors.reset} ${t("currentLanguageIs")} ${
+      colors.bold
+    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
+  );
+  console.log(
+    `  ${t("toChangeLanguage")} ${
+      colors.cyan
+    }version-control config --lang <code>${colors.reset}`
+  );
+  console.log("");
+}
+
+/**
+ * Handle config commands
+ */
+function handleConfigCommand(args: string[]): void {
+  // version-control config --lang <code>
+  if (args[0] === "--lang" && args[1]) {
+    const lang = args[1].toLowerCase();
+    if (lang === "en" || lang === "pt" || lang === "es" || lang === "fr") {
+      setLanguage(lang);
+      console.log("");
+      console.log(
+        `${colors.green}✓${colors.reset} ${t("languageSet")} ${
+          colors.bold
+        }${lang.toUpperCase()}${colors.reset}`
+      );
+      console.log("");
+      console.log(`${t("availableLanguages")}`);
+      console.log("");
+      process.exit(0);
+    } else {
+      console.log("");
+      console.log(`${colors.red}✗${colors.reset} ${t("invalidLanguage")}`);
+      console.log("");
+      process.exit(1);
+    }
+  }
+
+  // version-control config --clear
+  if (args[0] === "--clear") {
+    clearLanguage();
+    console.log("");
+    console.log(`${colors.green}✓${colors.reset} ${t("languageCleared")}`);
+    console.log("");
+    process.exit(0);
+  }
+
+  // Show current config
+  console.log("");
+  console.log(`${colors.bold}${colors.cyan}Configuration${colors.reset}`);
+  console.log("");
+  showLanguageInfo();
+  console.log(`${colors.bold}Commands:${colors.reset}`);
+  console.log(
+    `  ${colors.cyan}version-control config --lang <code>${colors.reset} - Set language (en, pt, es, fr)`
+  );
+  console.log(
+    `  ${colors.cyan}version-control config --clear${colors.reset}      - Clear language config`
+  );
+  console.log("");
+  process.exit(0);
+}
 
 /**
  * Main function
  */
 async function main(): Promise<void> {
+  // Check for config command
+  const args = process.argv.slice(2);
+  if (args[0] === "config") {
+    handleConfigCommand(args.slice(1));
+    return;
+  }
+
+  // Check for updates (non-blocking)
+  checkForUpdates().catch(() => {
+    // Silently ignore errors
+  });
+
   console.log("");
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log(
-    `${colors.bold}${colors.cyan}          Sistema de Controle de Versão${colors.reset}`
+    `${colors.bold}${colors.cyan}          ${t("versionControl")}${
+      colors.reset
+    }`
   );
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log("");
 
+  // Show language info
+  showLanguageInfo();
+
   // Check if there's a commit
   const hasCommit = git("rev-parse HEAD 2>/dev/null");
   if (!hasCommit) {
-    console.log(
-      `${colors.yellow}⚠${colors.reset} Nenhum commit encontrado. Faça um commit primeiro.`
-    );
+    console.log(`${colors.yellow}⚠${colors.reset} ${t("noCommitFound")}`);
     process.exit(0);
   }
 
   // Current version
   const currentVersion = getCurrentVersion();
   console.log(
-    `${colors.bold}Versão atual:${colors.reset} ${colors.cyan}${currentVersion}${colors.reset}`
+    `${colors.bold}${t("currentVersion")}${colors.reset} ${
+      colors.cyan
+    }${currentVersion}${colors.reset}`
   );
   console.log("");
 
   // Analyze changes
-  console.log(`${colors.bold}Analisando último commit...${colors.reset}`);
+  console.log(`${colors.bold}${t("analyzingCommit")}${colors.reset}`);
   const analysis = analyzeChanges();
 
   console.log("");
-  console.log(`${colors.bold}Mensagem do commit:${colors.reset}`);
+  console.log(`${colors.bold}${t("commitMessage")}${colors.reset}`);
   console.log(`  "${analysis.commitMsg}"`);
   console.log("");
   console.log(
-    `${colors.bold}Arquivos modificados:${colors.reset} ${analysis.filesChanged.length}`
+    `${colors.bold}${t("filesModified")}${colors.reset} ${
+      analysis.filesChanged.length
+    }`
   );
   analysis.filesChanged.slice(0, 5).forEach((file) => {
     console.log(`  - ${file}`);
   });
   if (analysis.filesChanged.length > 5) {
-    console.log(`  ... e mais ${analysis.filesChanged.length - 5} arquivo(s)`);
+    console.log(
+      `  ... ${t("andMore")} ${analysis.filesChanged.length - 5} arquivo(s)`
+    );
   }
   console.log("");
 
   // Show analysis
-  console.log(`${colors.bold}Análise da mudança:${colors.reset}`);
+  console.log(`${colors.bold}${t("changeAnalysis")}${colors.reset}`);
   analysis.reason.forEach((reason) => console.log(`  ${reason}`));
   console.log("");
 
@@ -87,12 +189,16 @@ async function main(): Promise<void> {
   };
 
   console.log(
-    `${colors.bold}Tipo sugerido:${colors.reset} ${typeEmojis[analysis.type]} ${
-      typeColors[analysis.type]
-    }${analysis.type.toUpperCase()}${colors.reset}`
+    `${colors.bold}${t("suggestedType")}${colors.reset} ${
+      typeEmojis[analysis.type]
+    } ${typeColors[analysis.type]}${analysis.type.toUpperCase()}${colors.reset}`
   );
   console.log(
-    `${colors.bold}Nova versão:${colors.reset} ${colors.cyan}${currentVersion}${colors.reset} → ${colors.green}${colors.bold}${suggestedVersion}${colors.reset}`
+    `${colors.bold}${t("newVersion")}${colors.reset} ${
+      colors.cyan
+    }${currentVersion}${colors.reset} → ${colors.green}${
+      colors.bold
+    }${suggestedVersion}${colors.reset}`
   );
   console.log("");
 
@@ -103,61 +209,53 @@ async function main(): Promise<void> {
   while (true) {
     shouldUpdate = await question(
       rl,
-      `${colors.bold}Deseja atualizar a versão? (s/n):${colors.reset} `
+      `${colors.bold}${t("updateVersion")}${colors.reset} `
     );
 
     const answer = shouldUpdate.toLowerCase();
 
     if (!shouldUpdate) {
-      console.log(`${colors.red}Por favor, digite 's' ou 'n'${colors.reset}`);
+      console.log(`${colors.red}${t("pleaseEnterYesNo")}${colors.reset}`);
       continue;
     }
 
-    if (
-      answer === "s" ||
-      answer === "sim" ||
-      answer === "n" ||
-      answer === "não" ||
-      answer === "nao"
-    ) {
+    const yesOptions = getYesOptions();
+    const noOptions = getNoOptions();
+
+    if (yesOptions.includes(answer) || noOptions.includes(answer)) {
       break;
     }
 
-    console.log(
-      `${colors.red}Resposta inválida. Digite 's' para sim ou 'n' para não${colors.reset}`
-    );
+    console.log(`${colors.red}${t("invalidResponse")}${colors.reset}`);
   }
 
-  if (
-    shouldUpdate.toLowerCase() !== "s" &&
-    shouldUpdate.toLowerCase() !== "sim"
-  ) {
+  if (!getYesOptions().includes(shouldUpdate.toLowerCase())) {
     console.log("");
-    console.log(`${colors.yellow}Versão não alterada.${colors.reset}`);
+    console.log(`${colors.yellow}${t("versionNotChanged")}${colors.reset}`);
     await closeInterface(rl);
     process.exit(0);
   }
 
   // Allow choosing a different type
   console.log("");
-  console.log(`${colors.bold}Confirme o tipo de versão:${colors.reset}`);
+  console.log(`${colors.bold}${t("confirmVersionType")}${colors.reset}`);
   console.log(
     `  ${colors.red}1${colors.reset} - MAJOR (${bumpVersion(
       currentVersion,
       "major"
-    )}) - Breaking changes`
+    )}) - ${t("majorDesc")}`
   );
   console.log(
     `  ${colors.yellow}2${colors.reset} - MINOR (${bumpVersion(
       currentVersion,
       "minor"
-    )}) - Nova funcionalidade`
+    )}) - ${t("minorDesc")}`
   );
   console.log(
     `  ${colors.green}3${colors.reset} - PATCH (${bumpVersion(
       currentVersion,
       "patch"
-    )}) - Correção de bug`
+    )}) - ${t("patchDesc")}`
   );
   console.log("");
 
@@ -168,7 +266,9 @@ async function main(): Promise<void> {
   while (true) {
     typeChoice = await question(
       rl,
-      `${colors.bold}Escolha (1/2/3) [padrão: ${defaultChoice}]:${colors.reset} `
+      `${colors.bold}${t("choose")} (1/2/3) [${t(
+        "defaultLabel"
+      )}: ${defaultChoice}]:${colors.reset} `
     );
 
     // If empty, use default
@@ -182,7 +282,7 @@ async function main(): Promise<void> {
       break;
     }
 
-    console.log(`${colors.red}Opção inválida. Digite 1, 2 ou 3${colors.reset}`);
+    console.log(`${colors.red}${t("invalidOption")}${colors.reset}`);
   }
 
   let finalType: VersionType = analysis.type;
@@ -194,7 +294,7 @@ async function main(): Promise<void> {
 
   // Update files
   console.log("");
-  console.log(`${colors.bold}Atualizando arquivos...${colors.reset}`);
+  console.log(`${colors.bold}${t("updatingFiles")}${colors.reset}`);
   console.log("");
 
   updatePackageJson(finalVersion);
@@ -203,7 +303,9 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log(
-    `${colors.green}${colors.bold}✓ Versão atualizada para ${finalVersion}!${colors.reset}`
+    `${colors.green}${colors.bold}✓ ${t("versionUpdatedTo")} ${finalVersion}!${
+      colors.reset
+    }`
   );
   console.log("");
 
@@ -223,7 +325,7 @@ export { main, analyzeChanges, bumpVersion, getCurrentVersion };
 // Run if executed directly
 if (require.main === module) {
   main().catch((error) => {
-    console.error(`${colors.red}Erro:${colors.reset}`, error.message);
+    console.error(`${colors.red}${t("error")}${colors.reset}`, error.message);
     process.exit(1);
   });
 }

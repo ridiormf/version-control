@@ -1,5 +1,6 @@
 import { git } from "./git";
 import { ChangeAnalysis } from "./types";
+import { t } from "./i18n";
 
 /**
  * Analyze changes from the last commit and suggest version type
@@ -65,9 +66,7 @@ export function analyzeChanges(): ChangeAnalysis {
   // Check for MAJOR
   if (majorKeywords.some((kw) => msgLower.includes(kw))) {
     analysis.type = "major";
-    analysis.reason.push(
-      "🔴 Commit indica mudança BREAKING ou remoção de funcionalidade"
-    );
+    analysis.reason.push(t("breakingChange"));
   }
 
   // Check for critical files modified (config structure, main entry points)
@@ -88,7 +87,7 @@ export function analyzeChanges(): ChangeAnalysis {
     );
     if (configChanges.length > 0) {
       analysis.type = "minor";
-      analysis.reason.push("🟡 Arquivos de configuração modificados");
+      analysis.reason.push(t("configFilesModified"));
     }
   }
 
@@ -98,7 +97,7 @@ export function analyzeChanges(): ChangeAnalysis {
     analysis.type === "patch"
   ) {
     analysis.type = "minor";
-    analysis.reason.push("🟡 Commit indica nova funcionalidade");
+    analysis.reason.push(t("newFeatureIndicated"));
   }
 
   // Check for new files
@@ -109,9 +108,7 @@ export function analyzeChanges(): ChangeAnalysis {
     .filter(Boolean);
   if (newFiles.length > 0 && analysis.type === "patch") {
     analysis.type = "minor";
-    analysis.reason.push(
-      `🟡 ${newFiles.length} arquivo(s) novo(s) adicionado(s)`
-    );
+    analysis.reason.push(`🟡 ${newFiles.length} ${t("newFilesAdded")}`);
   }
 
   // Check for PATCH
@@ -119,13 +116,13 @@ export function analyzeChanges(): ChangeAnalysis {
     patchKeywords.some((kw) => msgLower.includes(kw)) &&
     analysis.type === "patch"
   ) {
-    analysis.reason.push("🟢 Commit indica correção de bug");
+    analysis.reason.push(t("bugFixIndicated"));
   }
 
   // If still no specific reason
   if (analysis.reason.length === 0) {
     if (analysis.type === "patch") {
-      analysis.reason.push("🟢 Pequena mudança/ajuste");
+      analysis.reason.push(t("smallChange"));
     }
   }
 
