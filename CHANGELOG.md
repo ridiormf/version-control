@@ -16,6 +16,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `⚠️ Breaking Changes` - Mudanças que quebram compatibilidade
 
 
+
+## [1.1.2] - 2025-12-24
+
+### ✨ Added
+
+- add comprehensive test suite and multi-language README support
+
+### 🔄 Changed
+
+- **src**: improve code structure
+
+
 ## [1.1.1] - 2025-12-24
 
 ### ✨ Added
