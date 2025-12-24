@@ -2,6 +2,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { ChangeAnalysis, VersionType } from "./types";
 import { colors } from "./colors";
+import {
+  getCommitsSinceLastTag,
+  groupCommitsByType,
+  removeDuplicates,
+} from "./changelog";
 
 /**
  * Update version in package.json
@@ -58,14 +63,14 @@ export function updateIndexFile(
 /**
  * Add entry to CHANGELOG.md
  * @param version - New version string
- * @param type - Version bump type
- * @param analysis - Change analysis data
+ * @param _type - Version bump type (not used, kept for API compatibility)
+ * @param _analysis - Change analysis data (not used, kept for API compatibility)
  * @param projectRoot - Root directory of the project
  */
 export function updateChangelog(
   version: string,
-  type: VersionType,
-  analysis: ChangeAnalysis,
+  _type: VersionType,
+  _analysis: ChangeAnalysis,
   projectRoot: string = process.cwd()
 ): void {
   const changelogPath = path.join(projectRoot, "CHANGELOG.md");
@@ -78,19 +83,80 @@ export function updateChangelog(
   const content = fs.readFileSync(changelogPath, "utf8");
   const date = new Date().toISOString().split("T")[0];
 
-  // Prepare entry based on type
-  let changeType = "Changed";
-  if (type === "major") changeType = "Changed";
-  if (type === "minor") changeType = "Added";
-  if (type === "patch") changeType = "Fixed";
+  // Get all commits since last tag
+  const commits = getCommitsSinceLastTag();
 
-  const newEntry = `
-## [${version}] - ${date}
+  if (commits.length === 0) {
+    console.log(
+      `${colors.yellow}⚠${colors.reset} Nenhum commit novo encontrado`
+    );
+    return;
+  }
 
-### ${changeType}
-- ${analysis.commitMsg}
+  // Group commits by type
+  const sections = groupCommitsByType(commits);
 
-`;
+  // Build changelog entry
+  let newEntry = `\n## [${version}] - ${date}\n`;
+
+  // Add sections in order of importance
+  if (sections.breaking.length > 0) {
+    newEntry += `\n### ⚠️ Breaking Changes\n\n`;
+    removeDuplicates(sections.breaking).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.added.length > 0) {
+    newEntry += `\n### ✨ Added\n\n`;
+    removeDuplicates(sections.added).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.changed.length > 0) {
+    newEntry += `\n### 🔄 Changed\n\n`;
+    removeDuplicates(sections.changed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.deprecated.length > 0) {
+    newEntry += `\n### ⚠️ Deprecated\n\n`;
+    removeDuplicates(sections.deprecated).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.removed.length > 0) {
+    newEntry += `\n### 🗑️ Removed\n\n`;
+    removeDuplicates(sections.removed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.fixed.length > 0) {
+    newEntry += `\n### 🐛 Fixed\n\n`;
+    removeDuplicates(sections.fixed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.security.length > 0) {
+    newEntry += `\n### 🔒 Security\n\n`;
+    removeDuplicates(sections.security).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.other.length > 0) {
+    newEntry += `\n### 📝 Other\n\n`;
+    removeDuplicates(sections.other).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  newEntry += "\n";
 
   // Insert after the header, before the first version
   const lines = content.split("\n");
@@ -99,6 +165,8 @@ export function updateChangelog(
   if (insertIndex !== -1) {
     lines.splice(insertIndex, 0, newEntry);
     fs.writeFileSync(changelogPath, lines.join("\n"));
-    console.log(`${colors.green}✓${colors.reset} CHANGELOG.md atualizado`);
+    console.log(
+      `${colors.green}✓${colors.reset} CHANGELOG.md atualizado com ${commits.length} commit(s)`
+    );
   }
 }

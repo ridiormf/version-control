@@ -2,7 +2,7 @@
 
 > Sistema inteligente de controle de versão que analisa commits do Git e automatiza o versionamento semântico (SemVer).
 
-[![npm version](https://img.shields.io/npm/v/@ridioricardo/version-control.svg)](https://www.npmjs.com/package/@ridioricardo/version-control)
+[![npm version](https://img.shields.io/npm/v/@ridio/version-control.svg)](https://www.npmjs.com/package/@ridio/version-control)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📋 Índice
@@ -34,19 +34,19 @@ O **Version Control** é uma ferramenta CLI que automatiza o processo de version
 ### Global (Recomendado)
 
 ```bash
-yarn global add @ridioricardo/version-control
+yarn global add @ridio/version-control
 ```
 
 ### Como dependência de desenvolvimento
 
 ```bash
-yarn add -D @ridioricardo/version-control
+yarn add -D @ridio/version-control
 ```
 
 ### Uso com npx (sem instalação)
 
 ```bash
-yarn dlx @ridioricardo/version-control
+yarn dlx @ridio/version-control
 ```
 
 ## 🚀 Uso
@@ -62,7 +62,7 @@ version-control
 Ou com yarn dlx:
 
 ```bash
-yarn dlx @ridioricardo/version-control
+yarn dlx @ridio/version-control
 ```
 
 ### Adicionando ao package.json
@@ -92,7 +92,7 @@ import {
   analyzeChanges,
   bumpVersion,
   getCurrentVersion,
-} from "@ridioricardo/version-control";
+} from "@ridio/version-control";
 
 // Obter versão atual
 const currentVersion = getCurrentVersion();
@@ -112,7 +112,39 @@ console.log("Nova versão:", newVersion);
 
 O sistema analisa as mudanças do último commit do Git e sugere a versão apropriada baseado em:
 
-### 🔴 MAJOR (X.0.0) - Breaking Changes
+### � Conventional Commits
+
+A ferramenta suporta o formato [Conventional Commits](https://www.conventionalcommits.org/), que estrutura as mensagens de commit de forma padronizada:
+
+```
+<tipo>(<escopo>): <descrição>
+
+[corpo opcional]
+
+[rodapé(s) opcional(is)]
+```
+
+**Exemplos:**
+
+- `feat(auth): add login functionality`
+- `fix: resolve memory leak in cache`
+- `feat!: remove support for Node 12` (breaking change)
+
+### 📋 CHANGELOG Inteligente
+
+Todos os commits desde a última versão são **automaticamente incluídos** no CHANGELOG, agrupados por tipo:
+
+- **✨ Added** - Novas funcionalidades (`feat:`, `add`, `new`)
+- **🐛 Fixed** - Correções de bugs (`fix:`, `bug`)
+- **🔄 Changed** - Mudanças em funcionalidades (`refactor:`, `perf:`)
+- **⚠️ Breaking Changes** - Mudanças incompatíveis (`BREAKING CHANGE`, `!`)
+- **🗑️ Removed** - Remoções (`remove`, `delete`)
+- **🔒 Security** - Correções de segurança (`security`)
+- **⚠️ Deprecated** - Funcionalidades obsoletas (`deprecat`)
+
+A ferramenta **remove automaticamente** duplicatas e commits similares, mantendo apenas as entradas mais relevantes.
+
+### �🔴 MAJOR (X.0.0) - Breaking Changes
 
 Detectado quando a mensagem de commit contém palavras-chave como:
 
