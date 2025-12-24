@@ -71,7 +71,11 @@ export function askChoice(
   return new Promise((resolve) => {
     // Flush any pending input
     if (rl._ttyInput && typeof (rl._ttyInput as any).read === "function") {
-      (rl._ttyInput as any).read();
+      try {
+        (rl._ttyInput as any).read();
+      } catch (error) {
+        // Ignore errors during buffer flush
+      }
     }
 
     rl.question(query, (answer: string) => {

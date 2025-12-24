@@ -1,4 +1,10 @@
-import { createInterface, question, closeInterface } from "../src/readline";
+import {
+  createInterface,
+  question,
+  askChoice,
+  askText,
+  closeInterface,
+} from "../src/readline";
 import * as readline from "readline";
 import * as fs from "fs";
 
@@ -191,6 +197,166 @@ describe("readline", () => {
 
       // Should not throw
       await expect(closePromise).resolves.toBeUndefined();
+    });
+  });
+
+  describe("askChoice", () => {
+    it("should flush stdin buffer and ask question with single Enter", async () => {
+      const mockRead = jest.fn();
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("1");
+        }),
+        _ttyInput: {
+          read: mockRead,
+        },
+      } as any;
+
+      const answer = await askChoice(mockRl, "Choose option: ");
+
+      expect(mockRead).toHaveBeenCalled();
+      expect(mockRl.question).toHaveBeenCalledWith(
+        "Choose option: ",
+        expect.any(Function)
+      );
+      expect(answer).toBe("1");
+    });
+
+    it("should work without TTY input (fallback to question)", async () => {
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("2");
+        }),
+        _ttyInput: null,
+      } as any;
+
+      const answer = await askChoice(mockRl, "Choose: ");
+
+      expect(mockRl.question).toHaveBeenCalledWith(
+        "Choose: ",
+        expect.any(Function)
+      );
+      expect(answer).toBe("2");
+    });
+
+    it("should handle empty input correctly", async () => {
+      const mockRead = jest.fn();
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("");
+        }),
+        _ttyInput: {
+          read: mockRead,
+        },
+      } as any;
+
+      const answer = await askChoice(mockRl, "Enter choice: ");
+
+      expect(answer).toBe("");
+    });
+
+    it("should trim whitespace from answer", async () => {
+      const mockRead = jest.fn();
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("  3  ");
+        }),
+        _ttyInput: {
+          read: mockRead,
+        },
+      } as any;
+
+      const answer = await askChoice(mockRl, "Option: ");
+
+      expect(answer).toBe("3");
+    });
+  });
+
+  describe("askText", () => {
+    it("should ask question and return answer with single Enter", async () => {
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("my commit message");
+        }),
+      } as any;
+
+      const answer = await askText(mockRl, "Enter message: ");
+
+      expect(mockRl.question).toHaveBeenCalledWith(
+        "Enter message: ",
+        expect.any(Function)
+      );
+      expect(answer).toBe("my commit message");
+    });
+
+    it("should handle multiline text input", async () => {
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("first line\nsecond line");
+        }),
+      } as any;
+
+      const answer = await askText(mockRl, "Text: ");
+
+      expect(answer).toBe("first line\nsecond line");
+    });
+
+    it("should preserve internal whitespace but trim edges", async () => {
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          callback("  text with   spaces  ");
+        }),
+      } as any;
+
+      const answer = await askText(mockRl, "Text: ");
+
+      expect(answer).toBe("text with   spaces");
+    });
+  });
+
+  describe("Single Enter guarantee - Integration", () => {
+    it("should ensure askChoice requires only one Enter for user interaction", async () => {
+      // This test simulates the critical fix: buffer flush before question
+      const mockRead = jest.fn();
+      let questionCallCount = 0;
+
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          questionCallCount++;
+          // Simulate user pressing Enter once
+          setTimeout(() => callback("1"), 0);
+        }),
+        _ttyInput: {
+          read: mockRead,
+        },
+      } as any;
+
+      const answer = await askChoice(mockRl, "Select: ");
+
+      // Buffer should be flushed before asking
+      expect(mockRead).toHaveBeenCalledTimes(1);
+      // Question should be called exactly once
+      expect(mockRl.question).toHaveBeenCalledTimes(1);
+      // Should receive answer with single Enter
+      expect(questionCallCount).toBe(1);
+      expect(answer).toBe("1");
+    });
+
+    it("should verify askText works with single Enter", async () => {
+      let questionCallCount = 0;
+
+      const mockRl = {
+        question: jest.fn((_query, callback) => {
+          questionCallCount++;
+          setTimeout(() => callback("test message"), 0);
+        }),
+      } as any;
+
+      const answer = await askText(mockRl, "Message: ");
+
+      expect(mockRl.question).toHaveBeenCalledTimes(1);
+      expect(questionCallCount).toBe(1);
+      expect(answer).toBe("test message");
     });
   });
 });

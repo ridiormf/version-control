@@ -151,5 +151,33 @@ describe("analyzer", () => {
       expect(result.filesChanged).toEqual([]);
       expect(result.type).toBe("patch");
     });
+
+    it("should detect config changes as MINOR when not MAJOR (line 88)", () => {
+      mockedGit.mockImplementation((cmd: string) => {
+        if (cmd.includes("log -1")) return "update config";
+        if (cmd.includes("diff-filter=A")) return "";
+        return "config.ts\npackage.json";
+      });
+
+      const result = analyzeChanges();
+
+      // Should be MINOR due to config changes (line 88)
+      expect(result.type).toBe("minor");
+      expect(result.reason.join(" ")).toContain("config");
+    });
+
+    it("should add small change reason when type is patch and no other reason (line 124)", () => {
+      mockedGit.mockImplementation((cmd: string) => {
+        if (cmd.includes("log -1")) return "small update";
+        if (cmd.includes("diff-filter=A")) return "";
+        return "README.md";
+      });
+
+      const result = analyzeChanges();
+
+      // Should be PATCH with "small change" reason (line 124)
+      expect(result.type).toBe("patch");
+      expect(result.reason.length).toBeGreaterThan(0);
+    });
   });
 });

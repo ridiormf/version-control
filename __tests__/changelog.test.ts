@@ -166,6 +166,90 @@ describe("changelog", () => {
 
       expect(result.type).toBe("other");
     });
+
+    it("should detect deprecated type", () => {
+      const result = parseCommitMessage("abc1234567", "deprecate old API");
+
+      expect(result.type).toBe("deprecated");
+    });
+
+    it("should detect obsolete as deprecated", () => {
+      const result = parseCommitMessage(
+        "abc1234567",
+        "obsolete feature removed"
+      );
+
+      expect(result.type).toBe("deprecated");
+    });
+
+    it("should detect removed type", () => {
+      const result = parseCommitMessage("abc1234567", "remove unused code");
+
+      expect(result.type).toBe("removed");
+    });
+
+    it("should detect delete as removed", () => {
+      const result = parseCommitMessage("abc1234567", "delete old files");
+
+      expect(result.type).toBe("removed");
+    });
+
+    it("should detect refactor type", () => {
+      const result = parseCommitMessage(
+        "abc1234567",
+        "refactor: improve structure"
+      );
+
+      expect(result.type).toBe("refactor");
+    });
+
+    it("should detect rewrite as refactor", () => {
+      const result = parseCommitMessage(
+        "abc1234567",
+        "rewrite module completely"
+      );
+
+      expect(result.type).toBe("refactor");
+    });
+
+    it("should detect docs type", () => {
+      const result = parseCommitMessage("abc1234567", "docs: update README");
+
+      expect(result.type).toBe("docs");
+    });
+
+    it("should detect documentation keyword", () => {
+      const result = parseCommitMessage(
+        "abc1234567",
+        "documentation improvements"
+      );
+
+      expect(result.type).toBe("docs");
+    });
+
+    it("should detect style type", () => {
+      const result = parseCommitMessage("abc1234567", "style: format code");
+
+      expect(result.type).toBe("style");
+    });
+
+    it("should detect format as style", () => {
+      const result = parseCommitMessage("abc1234567", "format files");
+
+      expect(result.type).toBe("style");
+    });
+
+    it("should detect build as build type", () => {
+      const result = parseCommitMessage("abc1234567", "build: update config");
+
+      expect(result.type).toBe("build");
+    });
+
+    it("should detect ci as ci type", () => {
+      const result = parseCommitMessage("abc1234567", "ci: fix pipeline");
+
+      expect(result.type).toBe("ci");
+    });
   });
 
   describe("groupCommitsByType", () => {
@@ -378,6 +462,32 @@ describe("changelog", () => {
       const result = removeDuplicates(["fix bug"]);
 
       expect(result).toEqual(["fix bug"]);
+    });
+
+    it("should handle empty strings comparison", () => {
+      // Test the similarity function edge case (line 214)
+      const entries = ["", "", "test"];
+      const result = removeDuplicates(entries);
+
+      // Empty strings are duplicates
+      expect(result.length).toBeLessThanOrEqual(2);
+    });
+
+    it("should group other types correctly", () => {
+      const commits: CommitInfo[] = [
+        {
+          hash: "abc1234",
+          message: "",
+          type: "unknown",
+          description: "unknown change",
+          breaking: false,
+        },
+      ];
+
+      const result = groupCommitsByType(commits);
+
+      // Should go into 'other' section (line 162)
+      expect(result.other).toContain("unknown change");
     });
   });
 });

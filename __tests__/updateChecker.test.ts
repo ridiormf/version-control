@@ -161,5 +161,34 @@ describe("updateChecker", () => {
       // Should not throw
       await expect(checkForUpdates()).resolves.toBeUndefined();
     });
+
+    it("should handle network errors gracefully", async () => {
+      const mockRequest: any = {
+        on: jest.fn((_event, callback) => {
+          if (_event === "error") {
+            callback(new Error("Network error"));
+          }
+          return mockRequest;
+        }),
+        destroy: jest.fn(),
+      };
+
+      (https.get as jest.Mock).mockImplementation(() => {
+        return mockRequest;
+      });
+
+      // Should not throw - line 89-90
+      await expect(checkForUpdates()).resolves.toBeUndefined();
+    });
+
+    it("should handle exception in checkForUpdates", async () => {
+      // Force an error that will be caught in the catch block (line 49)
+      (https.get as jest.Mock).mockImplementation(() => {
+        throw new Error("Unexpected error");
+      });
+
+      // Should not throw - error is caught silently
+      await expect(checkForUpdates()).resolves.toBeUndefined();
+    });
   });
 });

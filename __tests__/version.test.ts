@@ -85,5 +85,14 @@ describe("version", () => {
       const version = getCurrentVersion(testDir);
       expect(version).toBe("0.0.1");
     });
+
+    it("should use current directory when no parameter provided (line 9)", () => {
+      // Test default parameter behavior
+      const version = getCurrentVersion();
+
+      // Should read from actual package.json in project root
+      expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(typeof version).toBe("string");
+    });
   });
 });

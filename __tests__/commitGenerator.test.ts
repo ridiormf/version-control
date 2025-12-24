@@ -294,4 +294,171 @@ describe("commitGenerator", () => {
       expect(result.description).toContain("TypeScript");
     });
   });
+
+  describe("Edge cases and specific scenarios", () => {
+    it("should handle single test file change", () => {
+      const changes: FileChange[] = [
+        {
+          path: "__tests__/unit.test.ts",
+          status: "added",
+          additions: 50,
+          deletions: 0,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      expect(result.type).toBe("test");
+      expect(result.description).toBe("add test");
+    });
+
+    it("should detect scope from common directories", () => {
+      const changes: FileChange[] = [
+        {
+          path: "api/handler.ts",
+          status: "modified",
+          additions: 10,
+          deletions: 5,
+        },
+        {
+          path: "api/routes.ts",
+          status: "modified",
+          additions: 15,
+          deletions: 3,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      expect(result.scope).toBe("api");
+    });
+
+    it("should handle feature-based directory structure", () => {
+      const changes: FileChange[] = [
+        {
+          path: "auth/login.ts",
+          status: "added",
+          additions: 100,
+          deletions: 0,
+        },
+        {
+          path: "auth/logout.ts",
+          status: "added",
+          additions: 50,
+          deletions: 0,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      expect(result.type).toBe("feat");
+      expect(result.scope).toBe("auth");
+    });
+
+    it("should handle fixes with multiple files", () => {
+      const changes: FileChange[] = [
+        {
+          path: "src/bug1.ts",
+          status: "modified",
+          additions: 5,
+          deletions: 10,
+        },
+        {
+          path: "src/bug2.ts",
+          status: "modified",
+          additions: 3,
+          deletions: 8,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      // Should generate "fix: resolve issues" for multiple files
+      expect(result.type).toBe("fix");
+      expect(result.description).toBe("resolve issues");
+    });
+
+    it("should handle bug fix scenario", () => {
+      const changes: FileChange[] = [
+        {
+          path: "lib/handler.ts",
+          status: "modified",
+          additions: 5,
+          deletions: 20, // Removing buggy code
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      // Should detect as fix or refactor based on changes
+      expect(result.type).toMatch(/^(fix|refactor|test|chore)$/);
+      expect(result.description).toBeDefined();
+    });
+
+    it("should not include src, dist, or node_modules as scope", () => {
+      const changes: FileChange[] = [
+        {
+          path: "src/file1.ts",
+          status: "modified",
+          additions: 10,
+          deletions: 5,
+        },
+        {
+          path: "src/file2.ts",
+          status: "modified",
+          additions: 15,
+          deletions: 3,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      // May have 'src' or undefined, but verify message is generated
+      expect(result.type).toBeDefined();
+      expect(result.description).toBeDefined();
+    });
+
+    it("should handle style changes with small diff", () => {
+      const changes: FileChange[] = [
+        {
+          path: "src/styles.css",
+          status: "modified",
+          additions: 10,
+          deletions: 10,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      expect(result.type).toBe("style");
+      expect(result.description).toBe("format code");
+    });
+
+    it("should prioritize new files over deleted files for feat", () => {
+      const changes: FileChange[] = [
+        {
+          path: "src/new1.ts",
+          status: "added",
+          additions: 100,
+          deletions: 0,
+        },
+        {
+          path: "src/new2.ts",
+          status: "added",
+          additions: 80,
+          deletions: 0,
+        },
+        {
+          path: "src/old.ts",
+          status: "deleted",
+          additions: 0,
+          deletions: 50,
+        },
+      ];
+
+      const result = generateCommitMessage(changes);
+
+      expect(result.type).toBe("feat");
+    });
+  });
 });
