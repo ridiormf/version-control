@@ -144,6 +144,20 @@ Todos os commits desde a última versão são **automaticamente incluídos** no 
 
 A ferramenta **remove automaticamente** duplicatas e commits similares, mantendo apenas as entradas mais relevantes.
 
+#### 🎉 Versão Inicial (1.0.0)
+
+Quando a ferramenta detecta que está gerando a versão **1.0.0** (primeira release), ela adiciona uma mensagem especial no CHANGELOG:
+
+```markdown
+## [1.0.0] - 2025-12-24
+
+### 🎉 Initial Release
+
+Primeira versão pública do projeto.
+```
+
+Esta é uma regra automática aplicada a **qualquer projeto** que usar a ferramenta pela primeira vez.
+
 ### �🔴 MAJOR (X.0.0) - Breaking Changes
 
 Detectado quando a mensagem de commit contém palavras-chave como:

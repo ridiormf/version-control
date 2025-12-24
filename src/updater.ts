@@ -99,6 +99,14 @@ export function updateChangelog(
   // Build changelog entry
   let newEntry = `\n## [${version}] - ${date}\n`;
 
+  // Check if this is the first release (1.0.0)
+  const isFirstRelease = version === "1.0.0";
+
+  if (isFirstRelease) {
+    newEntry += `\n### 🎉 Initial Release\n\n`;
+    newEntry += `Primeira versão pública do projeto.\n\n`;
+  }
+
   // Add sections in order of importance
   if (sections.breaking.length > 0) {
     newEntry += `\n### ⚠️ Breaking Changes\n\n`;
