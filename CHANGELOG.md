@@ -18,6 +18,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 
 
+
+## [1.1.4] - 2025-12-24
+
+### 🐛 Fixed
+
+- correct GitHub username in package.json URLs
+
+
 ## [1.1.3] - 2025-12-24
 
 ### 🔄 Changed
