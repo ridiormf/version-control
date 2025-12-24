@@ -23,15 +23,15 @@ const { t, currentLanguage, isLanguageConfigured } = require("../dist/i18n.js");
  */
 function showLanguageInfo() {
   const source = isLanguageConfigured
-    ? t("configuredManually")
-    : t("detectedFromSystem");
+    ? t.configuredManually
+    : t.detectedFromSystem;
   console.log(
-    `${colors.cyan}ℹ${colors.reset} ${t("currentLanguageIs")} ${
+    `${colors.cyan}ℹ${colors.reset} ${t.currentLanguageIs} ${
       colors.bold
     }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
   );
   console.log(
-    `  ${t("toChangeLanguage")} ${colors.cyan}version-control config --lang <code>${colors.reset}`
+    `  ${t.toChangeLanguage} ${colors.cyan}version-control config --lang <code>${colors.reset}`
   );
   console.log("");
 }
@@ -47,7 +47,7 @@ async function main() {
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log(
-    `${colors.bold}${colors.cyan}              ${t("")}${colors.reset}`
+    `${colors.bold}${colors.cyan}              ${t.smartCommit}${colors.reset}`
   );
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
@@ -63,15 +63,15 @@ async function main() {
   }).trim();
 
   if (!stagedFiles) {
-    console.log(`${colors.yellow}ℹ${colors.reset} ${t("")}`);
+    console.log(`${colors.yellow}ℹ${colors.reset} ${t.noStagedFiles}`);
     console.log("");
-    console.log(`${colors.bold}${t("")}${colors.reset}`);
-    console.log(`  1. ${t("")}`);
+    console.log(`${colors.bold}${t.howToUse}${colors.reset}`);
+    console.log(`  1. ${t.makeChanges}`);
     console.log(
-      `  2. ${t("")} ${colors.cyan}git add <files>${colors.reset}`
+      `  2. ${t.stageFiles} ${colors.cyan}git add <files>${colors.reset}`
     );
     console.log(
-      `  3. ${t("")} ${colors.cyan}yarn commit${colors.reset}`
+      `  3. ${t.runCommand} ${colors.cyan}yarn commit${colors.reset}`
     );
     console.log("");
     process.exit(0);
@@ -81,7 +81,7 @@ async function main() {
   const changes = getStagedChanges();
 
   console.log(
-    `${colors.bold}${t("")}${colors.reset} ${changes.length}`
+    `${colors.bold}${t.stagedFiles}${colors.reset} ${changes.length}`
   );
   changes.slice(0, 10).forEach((change) => {
     const icon =
@@ -97,29 +97,29 @@ async function main() {
   });
 
   if (changes.length > 10) {
-    console.log(`  ... ${t("")} ${changes.length - 10} ${t("")}`);
+    console.log(`  ... ${t.andMore} ${changes.length - 10} ${t.andMoreFiles}`);
   }
   console.log("");
 
   // Generate commit message
-  console.log(`${colors.bold}${t("")}${colors.reset}`);
+  console.log(`${colors.bold}${t.analyzingChanges}${colors.reset}`);
   const suggestion = generateCommitMessage(changes);
 
   console.log("");
-  console.log(`${colors.bold}${t("")}${colors.reset}`);
+  console.log(`${colors.bold}${t.generatedMessage}${colors.reset}`);
   console.log(`${colors.green}${suggestion.fullMessage}${colors.reset}`);
   console.log("");
 
   // Show breakdown
-  console.log(`${colors.bold}${t("")}${colors.reset}`);
-  console.log(`  ${t("")} ${colors.cyan}${suggestion.type}${colors.reset}`);
+  console.log(`${colors.bold}${t.details}${colors.reset}`);
+  console.log(`  ${t.type} ${colors.cyan}${suggestion.type}${colors.reset}`);
   if (suggestion.scope) {
     console.log(
-      `  ${t("")} ${colors.cyan}${suggestion.scope}${colors.reset}`
+      `  ${t.scope} ${colors.cyan}${suggestion.scope}${colors.reset}`
     );
   }
   console.log(
-    `  ${t("")} ${colors.cyan}${suggestion.description}${colors.reset}`
+    `  ${t.description} ${colors.cyan}${suggestion.description}${colors.reset}`
   );
   console.log("");
 
@@ -130,7 +130,7 @@ async function main() {
   while (true) {
     choice = await question(
       rl,
-      `${colors.bold}${t("")} [1] ${t("")} [2] ${t("")} [3] ${t("")} (${t("")}: 1)\n${t("")}${colors.reset} `
+      `${colors.bold}${t.options} [1] ${t.optionCommit} [2] ${t.optionEdit} [3] ${t.optionCancel} (${t.defaultLabel}: 1)\n${t.choice}${colors.reset} `
     );
 
     // Default to option 1 if empty
@@ -142,7 +142,7 @@ async function main() {
       break;
     }
 
-    console.log(`${colors.red}${t("")}${colors.reset}`);
+    console.log(`${colors.red}${t.invalidEnter}${colors.reset}`);
   }
 
   let finalMessage = suggestion.fullMessage;
@@ -151,18 +151,18 @@ async function main() {
     console.log("");
     finalMessage = await question(
       rl,
-      `${colors.bold}${t("")}${colors.reset} `
+      `${colors.bold}${t.enterCommitMessage}${colors.reset} `
     );
 
     if (!finalMessage.trim()) {
       console.log("");
-      console.log(`${colors.red}${t("")}${colors.reset}`);
+      console.log(`${colors.red}${t.emptyMessage}${colors.reset}`);
       await closeInterface(rl);
       process.exit(1);
     }
   } else if (choice === "3") {
     console.log("");
-    console.log(`${colors.yellow}${t("")}${colors.reset}`);
+    console.log(`${colors.yellow}${t.commitCancelled}${colors.reset}`);
     await closeInterface(rl);
     process.exit(0);
   }
@@ -171,7 +171,7 @@ async function main() {
 
   // Execute commit
   console.log("");
-  console.log(`${colors.bold}${t("")}${colors.reset}`);
+  console.log(`${colors.bold}${t.committing}${colors.reset}`);
 
   try {
     execSync(`git commit -m "${finalMessage.replace(/"/g, '\\"')}"`, {
@@ -181,7 +181,7 @@ async function main() {
 
     console.log("");
     console.log(
-      `${colors.green}${colors.bold}✓ ${t("")}${colors.reset}`
+      `${colors.green}${colors.bold}✓ ${t.commitSuccess}${colors.reset}`
     );
     console.log("");
 
@@ -189,7 +189,7 @@ async function main() {
     process.exit(0);
   } catch (error) {
     console.log("");
-    console.log(`${colors.red}✗ ${t("")}${colors.reset}`);
+    console.log(`${colors.red}✗ ${t.commitFailed}${colors.reset}`);
     console.log("");
     process.exit(1);
   }
