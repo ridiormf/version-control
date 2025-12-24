@@ -17,6 +17,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 
 
+
+## [1.1.3] - 2025-12-24
+
+### 🔄 Changed
+
+- **src**: update index
+
+
 ## [1.1.2] - 2025-12-24
 
 ### ✨ Added
