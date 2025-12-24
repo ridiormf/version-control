@@ -13,7 +13,7 @@ import { git } from "./git";
 import { getCurrentVersion, bumpVersion } from "./version";
 import { analyzeChanges } from "./analyzer";
 import { updatePackageJson, updateIndexFile, updateChangelog } from "./updater";
-import { createInterface, question, closeInterface } from "./readline";
+import { createInterface, askChoice, closeInterface } from "./readline";
 import { executeGitCommands } from "./gitCommands";
 import { VersionType } from "./types";
 import { checkForUpdates } from "./updateChecker";
@@ -109,10 +109,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Check for updates (non-blocking)
-  checkForUpdates().catch(() => {
-    // Silently ignore errors
-  });
+  // Check for updates to clear stdin buffer
+  await checkForUpdates().catch(() => {});
+
+  // Destroy HTTP agents immediately after
+  const http = require("http");
+  const https = require("https");
+  if (http.globalAgent) http.globalAgent.destroy();
+  if (https.globalAgent) https.globalAgent.destroy();
 
   console.log("");
   console.log(
@@ -207,7 +211,7 @@ async function main(): Promise<void> {
 
   let shouldUpdate = "";
   while (true) {
-    shouldUpdate = await question(
+    shouldUpdate = await askChoice(
       rl,
       `${colors.bold}${t("updateVersion")}${colors.reset} `
     );
@@ -232,8 +236,21 @@ async function main(): Promise<void> {
   if (!getYesOptions().includes(shouldUpdate.toLowerCase())) {
     console.log("");
     console.log(`${colors.yellow}${t("versionNotChanged")}${colors.reset}`);
+
+    // Close everything properly
     await closeInterface(rl);
-    process.exit(0);
+
+    // Destroy TTY streams manually
+    if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
+    if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
+    if ((rl as any)._ttyFd !== undefined) {
+      try {
+        require("fs").closeSync((rl as any)._ttyFd);
+      } catch (e) {}
+    }
+
+    // Force terminate with SIGTERM
+    process.kill(process.pid, "SIGTERM");
   }
 
   // Allow choosing a different type
@@ -264,7 +281,7 @@ async function main(): Promise<void> {
   let typeChoice = "";
 
   while (true) {
-    typeChoice = await question(
+    typeChoice = await askChoice(
       rl,
       `${colors.bold}${t("choose")} (1/2/3) [${t(
         "defaultLabel"
