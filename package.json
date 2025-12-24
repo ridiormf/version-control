@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "version-control": "./bin/version-control.js"
+    "version-control": "./bin/version-control.js",
+    "smart-commit": "./bin/smart-commit.js"
   },
   "files": [
     "dist",
@@ -21,7 +22,8 @@
     "prepublishOnly": "yarn clean && yarn build",
     "test": "echo \"Tests coming soon\" && exit 0",
     "version": "node bin/version-control.js",
-    "version:test": "bash scripts/test-version.sh"
+    "version:test": "bash scripts/test-version.sh",
+    "commit": "node bin/smart-commit.js"
   },
   "keywords": [
     "version",

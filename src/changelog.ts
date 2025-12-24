@@ -35,8 +35,14 @@ export function getCommitsSinceLastTag(): CommitInfo[] {
   const lastTag = git("describe --tags --abbrev=0 2>/dev/null");
 
   // Get commits since last tag, or all commits if no tag exists
-  const range = lastTag ? `${lastTag}..HEAD` : "HEAD";
-  const commits = git(`log ${range} --pretty=format:"%H|%s"`);
+  let commits: string;
+  if (lastTag) {
+    // Commits since last tag
+    commits = git(`log ${lastTag}..HEAD --pretty=format:"%H|%s"`);
+  } else {
+    // No tag exists - get ALL commits (first release)
+    commits = git(`log --pretty=format:"%H|%s"`);
+  }
 
   if (!commits) {
     return [];
