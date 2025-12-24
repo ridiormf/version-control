@@ -59,6 +59,42 @@ export function question(
 }
 
 /**
+ * Ask for menu choice (specific for option selection)
+ * @param rl - Readline interface
+ * @param query - Question to ask
+ * @returns User's choice
+ */
+export function askChoice(
+  rl: ReadlineInterface,
+  query: string
+): Promise<string> {
+  return new Promise((resolve) => {
+    // Flush any pending input
+    if (rl._ttyInput && typeof (rl._ttyInput as any).read === "function") {
+      (rl._ttyInput as any).read();
+    }
+
+    rl.question(query, (answer: string) => {
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * Ask for text input (specific for commit message editing)
+ * @param rl - Readline interface
+ * @param query - Question to ask
+ * @returns User's input
+ */
+export function askText(rl: ReadlineInterface, query: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(query, (answer: string) => {
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
  * Close readline interface and TTY resources
  * @param rl - Readline interface to close
  */

@@ -18,12 +18,14 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
-    "prepare": "yarn build",
+    "prepare": "husky",
     "prepublishOnly": "yarn clean && yarn build",
-    "test": "echo \"Tests coming soon\" && exit 0",
-    "version": "version-control",
-    "version:test": "version-control --test",
-    "commit": "smart-commit"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "bump": "./bin/version-control.js",
+    "bump:test": "./bin/version-control.js --test",
+    "commit": "./bin/smart-commit.js"
   },
   "keywords": [
     "version",
@@ -52,7 +54,11 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.10.6",
+    "husky": "^9.1.7",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.3.3"
   },
   "dependencies": {

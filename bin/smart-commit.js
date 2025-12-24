@@ -12,7 +12,8 @@ const {
 } = require("../dist/commitGenerator.js");
 const {
   createInterface,
-  question,
+  askChoice,
+  askText,
   closeInterface,
 } = require("../dist/readline.js");
 const { checkForUpdates } = require("../dist/updateChecker.js");
@@ -39,10 +40,16 @@ function showLanguageInfo() {
 }
 
 async function main() {
-  // Check for updates (non-blocking)
-  checkForUpdates().catch(() => {
-    // Silently ignore errors
-  });
+  console.log("");
+
+  // Check for updates to clear stdin buffer
+  await checkForUpdates().catch(() => {});
+
+  // Destroy HTTP agents immediately after
+  const http = require("http");
+  const https = require("https");
+  if (http.globalAgent) http.globalAgent.destroy();
+  if (https.globalAgent) https.globalAgent.destroy();
 
   console.log("");
   console.log(
@@ -56,6 +63,7 @@ async function main() {
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
+  console.log(`${colors.yellow}[LOCAL VERSION]${colors.reset}`);
   console.log("");
 
   // Show language info
@@ -136,7 +144,7 @@ async function main() {
 
   let choice = "";
   while (true) {
-    choice = await question(
+    choice = await askChoice(
       rl,
       `${colors.bold}${t("options")} [1] ${t("optionCommit")} [2] ${t(
         "optionEdit"
@@ -161,7 +169,7 @@ async function main() {
 
   if (choice === "2") {
     console.log("");
-    finalMessage = await question(
+    finalMessage = await askText(
       rl,
       `${colors.bold}${t("enterCommitMessage")}${colors.reset} `
     );
@@ -197,12 +205,36 @@ async function main() {
     );
     console.log("");
 
-    // Force clean exit
-    process.exit(0);
+    // Close everything
+    rl.close();
+    if (rl._ttyInput) rl._ttyInput.destroy();
+    if (rl._ttyOutput) rl._ttyOutput.destroy();
+    if (rl._ttyFd !== undefined) {
+      try {
+        require("fs").closeSync(rl._ttyFd);
+      } catch (e) {}
+    }
+
+    // Kill HTTP agents
+    const http = require("http");
+    const https = require("https");
+    if (http.globalAgent) http.globalAgent.destroy();
+    if (https.globalAgent) https.globalAgent.destroy();
+
+    // Force terminate with SIGKILL
+    process.kill(process.pid, "SIGTERM");
   } catch (error) {
     console.log("");
     console.log(`${colors.red}✗ ${t("commitFailed")}${colors.reset}`);
     console.log("");
+    rl.close();
+    if (rl._ttyInput) rl._ttyInput.destroy();
+    if (rl._ttyOutput) rl._ttyOutput.destroy();
+    if (rl._ttyFd !== undefined) {
+      try {
+        require("fs").closeSync(rl._ttyFd);
+      } catch (e) {}
+    }
     process.exit(1);
   }
 }

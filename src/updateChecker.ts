@@ -56,9 +56,10 @@ export async function checkForUpdates(): Promise<void> {
 function getLatestVersion(packageName: string): Promise<string | null> {
   return new Promise((resolve) => {
     const url = `https://registry.npmjs.org/${packageName}/latest`;
+    let timeout: NodeJS.Timeout;
 
-    https
-      .get(url, (res) => {
+    const req = https
+      .get(url, { agent: false }, (res) => {
         let data = "";
 
         res.on("data", (chunk) => {
@@ -68,15 +69,27 @@ function getLatestVersion(packageName: string): Promise<string | null> {
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
+            if (timeout) clearTimeout(timeout);
+            res.destroy();
             resolve(json.version || null);
           } catch {
+            if (timeout) clearTimeout(timeout);
+            res.destroy();
             resolve(null);
           }
         });
       })
       .on("error", () => {
+        if (timeout) clearTimeout(timeout);
         resolve(null);
       });
+
+    // Set timeout to prevent hanging
+    timeout = setTimeout(() => {
+      req.destroy();
+      resolve(null);
+    }, 5000);
+    timeout.unref(); // Don't block process exit
   });
 }
 
@@ -84,7 +97,10 @@ function getLatestVersion(packageName: string): Promise<string | null> {
  * Compare two semantic versions
  * @returns true if newVersion is greater than currentVersion
  */
-function isNewerVersion(newVersion: string, currentVersion: string): boolean {
+export function isNewerVersion(
+  newVersion: string,
+  currentVersion: string
+): boolean {
   const newParts = newVersion.split(".").map(Number);
   const currentParts = currentVersion.split(".").map(Number);
 
