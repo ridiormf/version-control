@@ -2,7 +2,7 @@
 
 /**
  * Version Control System - Main CLI
- * @version 1.0.0
+ * @version 1.1.1
  *
  * Intelligent version control system that analyzes Git commits
  * and automates semantic versioning (SemVer).

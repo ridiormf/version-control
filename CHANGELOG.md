@@ -15,6 +15,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `🔒 Security` - Correções de vulnerabilidades
 - `⚠️ Breaking Changes` - Mudanças que quebram compatibilidade
 
+
+## [1.1.1] - 2025-12-24
+
+### ✨ Added
+
+- add i18n support with i18next library
+- **src**: add JavaScript functionality
+- initial commit - version control system
+
+### 🐛 Fixed
+
+- correct i18n function calls in smart-commit
+- **bin**: resolve issue in smart-commit
+- resolve i18n in smart-commit by using function calls
+- **src**: resolve issues
+
+### 📝 Other
+
+- Atualização de lógica do changelog para versões iniciais
+- Atualizações para inicio de projeto
+
+
 ## [1.1.0] - 2025-12-24
 
 ### ✨ Added
