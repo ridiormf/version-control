@@ -309,6 +309,18 @@ async function main(): Promise<void> {
 
   const finalVersion = bumpVersion(currentVersion, finalType);
 
+  // Close readline interface BEFORE updating files
+  await closeInterface(rl);
+
+  // Destroy TTY streams manually
+  if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
+  if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
+  if ((rl as any)._ttyFd !== undefined) {
+    try {
+      require("fs").closeSync((rl as any)._ttyFd);
+    } catch (e) {}
+  }
+
   // Update files
   console.log("");
   console.log(`${colors.bold}${t("updatingFiles")}${colors.reset}`);
@@ -326,14 +338,15 @@ async function main(): Promise<void> {
   );
   console.log("");
 
-  // Close readline interface
-  await closeInterface(rl);
-
   // Execute git commands automatically
   executeGitCommands(finalVersion);
 
-  // Force immediate exit
-  process.exit(0);
+  // Kill HTTP agents
+  if (http.globalAgent) http.globalAgent.destroy();
+  if (https.globalAgent) https.globalAgent.destroy();
+
+  // Force terminate with SIGTERM
+  process.kill(process.pid, "SIGTERM");
 }
 
 // Export for programmatic use
