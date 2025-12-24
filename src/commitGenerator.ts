@@ -1,11 +1,11 @@
-import { git } from './git';
+import { git } from "./git";
 
 /**
  * File change information
  */
 export interface FileChange {
   path: string;
-  status: 'added' | 'modified' | 'deleted' | 'renamed';
+  status: "added" | "modified" | "deleted" | "renamed";
   additions: number;
   deletions: number;
 }
@@ -24,33 +24,33 @@ export interface CommitSuggestion {
  * Get staged file changes
  */
 export function getStagedChanges(): FileChange[] {
-  const output = git('diff --cached --numstat');
-  
+  const output = git("diff --cached --numstat");
+
   if (!output) {
     return [];
   }
 
   const changes: FileChange[] = [];
-  const lines = output.split('\n').filter(Boolean);
+  const lines = output.split("\n").filter(Boolean);
 
   for (const line of lines) {
-    const [additions, deletions, path] = line.split('\t');
-    
+    const [additions, deletions, path] = line.split("\t");
+
     // Skip binary files
-    if (additions === '-' || deletions === '-') {
+    if (additions === "-" || deletions === "-") {
       continue;
     }
 
     // Determine status
-    let status: FileChange['status'] = 'modified';
+    let status: FileChange["status"] = "modified";
     const statusOutput = git(`diff --cached --name-status -- "${path}"`);
-    
-    if (statusOutput.startsWith('A')) {
-      status = 'added';
-    } else if (statusOutput.startsWith('D')) {
-      status = 'deleted';
-    } else if (statusOutput.startsWith('R')) {
-      status = 'renamed';
+
+    if (statusOutput.startsWith("A")) {
+      status = "added";
+    } else if (statusOutput.startsWith("D")) {
+      status = "deleted";
+    } else if (statusOutput.startsWith("R")) {
+      status = "renamed";
     }
 
     changes.push({
@@ -70,9 +70,9 @@ export function getStagedChanges(): FileChange[] {
 export function generateCommitMessage(changes: FileChange[]): CommitSuggestion {
   if (changes.length === 0) {
     return {
-      type: 'chore',
-      description: 'update project files',
-      fullMessage: 'chore: update project files',
+      type: "chore",
+      description: "update project files",
+      fullMessage: "chore: update project files",
     };
   }
 
@@ -81,44 +81,44 @@ export function generateCommitMessage(changes: FileChange[]): CommitSuggestion {
   const changeTypes = analyzeChangeTypes(changes);
 
   // Determine commit type
-  let type = 'chore';
+  let type = "chore";
   let scope: string | undefined;
-  let description = '';
+  let description = "";
 
   // Check for new files (likely feat)
-  const newFiles = changes.filter(c => c.status === 'added');
-  const deletedFiles = changes.filter(c => c.status === 'deleted');
-  const modifiedFiles = changes.filter(c => c.status === 'modified');
+  const newFiles = changes.filter((c) => c.status === "added");
+  const deletedFiles = changes.filter((c) => c.status === "deleted");
+  const modifiedFiles = changes.filter((c) => c.status === "modified");
 
   // Documentation changes
   if (fileTypes.docs > 0 && fileTypes.code === 0) {
-    type = 'docs';
+    type = "docs";
     if (changes.length === 1) {
       description = `update ${getFileName(changes[0].path)}`;
     } else {
-      description = 'update documentation';
+      description = "update documentation";
     }
   }
   // Test changes
   else if (fileTypes.tests > 0 && fileTypes.code === 0) {
-    type = 'test';
-    description = fileTypes.tests === 1 ? 'add test' : 'update tests';
+    type = "test";
+    description = fileTypes.tests === 1 ? "add test" : "update tests";
   }
   // Config changes
   else if (fileTypes.config > 0 && fileTypes.code === 0) {
-    type = 'chore';
-    description = 'update configuration';
+    type = "chore";
+    description = "update configuration";
   }
   // Style/formatting only
   else if (changeTypes.totalChanges < 50 && fileTypes.style > 0) {
-    type = 'style';
-    description = 'format code';
+    type = "style";
+    description = "format code";
   }
   // New features
   else if (newFiles.length > 0 && newFiles.length > deletedFiles.length) {
-    type = 'feat';
+    type = "feat";
     scope = detectScope(newFiles);
-    
+
     if (newFiles.length === 1) {
       const fileName = getFileName(newFiles[0].path);
       description = `add ${fileName}`;
@@ -129,34 +129,35 @@ export function generateCommitMessage(changes: FileChange[]): CommitSuggestion {
   }
   // Deletions
   else if (deletedFiles.length > newFiles.length) {
-    type = 'refactor';
-    description = deletedFiles.length === 1 
-      ? `remove ${getFileName(deletedFiles[0].path)}`
-      : 'remove unused code';
+    type = "refactor";
+    description =
+      deletedFiles.length === 1
+        ? `remove ${getFileName(deletedFiles[0].path)}`
+        : "remove unused code";
   }
   // Bug fixes (check for common patterns)
   else if (containsFixPatterns(changes)) {
-    type = 'fix';
+    type = "fix";
     scope = detectScope(changes);
     description = generateFixDescription(changes);
   }
   // General updates
   else if (modifiedFiles.length > 0) {
-    type = 'refactor';
+    type = "refactor";
     scope = detectScope(modifiedFiles);
-    
+
     if (modifiedFiles.length === 1) {
       const fileName = getFileName(modifiedFiles[0].path);
       description = `update ${fileName}`;
     } else if (changeTypes.totalChanges > 200) {
-      description = 'major code refactoring';
+      description = "major code refactoring";
     } else {
-      description = 'improve code structure';
+      description = "improve code structure";
     }
   }
 
   // Build full message
-  const fullMessage = scope 
+  const fullMessage = scope
     ? `${type}(${scope}): ${description}`
     : `${type}: ${description}`;
 
@@ -182,14 +183,16 @@ function analyzeFileTypes(changes: FileChange[]) {
 
   for (const change of changes) {
     const path = change.path.toLowerCase();
-    
-    if (path.includes('test') || path.includes('spec')) {
+
+    if (path.includes("test") || path.includes("spec")) {
       types.tests++;
     } else if (path.match(/\.(md|txt|rst)$/)) {
       types.docs++;
-    } else if (path.match(/\.(json|yaml|yml|toml|ini|env|config)$/) || 
-               path.includes('package.json') || 
-               path.includes('tsconfig')) {
+    } else if (
+      path.match(/\.(json|yaml|yml|toml|ini|env|config)$/) ||
+      path.includes("package.json") ||
+      path.includes("tsconfig")
+    ) {
       types.config++;
     } else if (path.match(/\.(css|scss|sass|less)$/)) {
       types.style++;
@@ -225,23 +228,31 @@ function analyzeChangeTypes(changes: FileChange[]) {
  */
 function detectScope(changes: FileChange[]): string | undefined {
   // Look for common directory patterns
-  const paths = changes.map(c => c.path);
-  
+  const paths = changes.map((c) => c.path);
+
   // Check for specific directories
-  const commonDirs = ['src', 'lib', 'api', 'ui', 'components', 'utils', 'services'];
-  
+  const commonDirs = [
+    "src",
+    "lib",
+    "api",
+    "ui",
+    "components",
+    "utils",
+    "services",
+  ];
+
   for (const dir of commonDirs) {
-    if (paths.some(p => p.startsWith(`${dir}/`))) {
+    if (paths.some((p) => p.startsWith(`${dir}/`))) {
       return dir;
     }
   }
 
   // Check for feature-based directories
   const features = paths
-    .map(p => p.split('/')[0])
-    .filter(p => !['src', 'dist', 'node_modules'].includes(p));
-  
-  if (features.length > 0 && features.every(f => f === features[0])) {
+    .map((p) => p.split("/")[0])
+    .filter((p) => !["src", "dist", "node_modules"].includes(p));
+
+  if (features.length > 0 && features.every((f) => f === features[0])) {
     return features[0];
   }
 
@@ -252,9 +263,9 @@ function detectScope(changes: FileChange[]): string | undefined {
  * Get file name without extension
  */
 function getFileName(path: string): string {
-  const parts = path.split('/');
+  const parts = path.split("/");
   const fileName = parts[parts.length - 1];
-  return fileName.replace(/\.[^.]+$/, '');
+  return fileName.replace(/\.[^.]+$/, "");
 }
 
 /**
@@ -262,10 +273,10 @@ function getFileName(path: string): string {
  */
 function getMostCommonFileType(changes: FileChange[]): string {
   const extensions = changes
-    .map(c => c.path.split('.').pop() || '')
+    .map((c) => c.path.split(".").pop() || "")
     .filter(Boolean);
 
-  if (extensions.length === 0) return 'files';
+  if (extensions.length === 0) return "files";
 
   const counts = extensions.reduce((acc, ext) => {
     acc[ext] = (acc[ext] || 0) + 1;
@@ -275,12 +286,12 @@ function getMostCommonFileType(changes: FileChange[]): string {
   const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 
   const typeMap: Record<string, string> = {
-    ts: 'TypeScript',
-    js: 'JavaScript',
-    tsx: 'React',
-    jsx: 'React',
-    py: 'Python',
-    md: 'documentation',
+    ts: "TypeScript",
+    js: "JavaScript",
+    tsx: "React",
+    jsx: "React",
+    py: "Python",
+    md: "documentation",
   };
 
   return typeMap[mostCommon] || mostCommon;
@@ -293,7 +304,7 @@ function containsFixPatterns(changes: FileChange[]): boolean {
   // Simple heuristic: more deletions than additions often indicates fixes
   const totalAdditions = changes.reduce((sum, c) => sum + c.additions, 0);
   const totalDeletions = changes.reduce((sum, c) => sum + c.deletions, 0);
-  
+
   return totalDeletions > totalAdditions * 0.7;
 }
 
@@ -304,5 +315,5 @@ function generateFixDescription(changes: FileChange[]): string {
   if (changes.length === 1) {
     return `resolve issue in ${getFileName(changes[0].path)}`;
   }
-  return 'resolve issues';
+  return "resolve issues";
 }
