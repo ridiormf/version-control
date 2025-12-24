@@ -38,10 +38,11 @@ function getCurrentLanguage(): Language {
   return detectLanguage();
 }
 
-// Initialize i18next
+// Initialize i18next synchronously
 i18next.init({
   lng: getCurrentLanguage(),
   fallbackLng: "en",
+  initImmediate: false, // Force synchronous initialization
   resources: {
     en: {
       translation: {
