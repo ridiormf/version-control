@@ -38,19 +38,25 @@ O **Version Control** é uma ferramenta CLI que automatiza o processo de version
 ### Global (Recomendado)
 
 ```bash
-yarn global add @ridio/version-control
+yarn global add @ridiormf/version-control
+# ou
+npm install -g @ridiormf/version-control
 ```
 
 ### Como dependência de desenvolvimento
 
 ```bash
-yarn add -D @ridio/version-control
+yarn add -D @ridiormf/version-control
+# ou
+npm install -D @ridiormf/version-control
 ```
 
 ### Uso com npx (sem instalação)
 
 ```bash
-yarn dlx @ridio/version-control
+npx @ridiormf/version-control
+# ou
+yarn dlx @ridiormf/version-control
 ```
 
 ## 🚀 Uso
@@ -63,10 +69,10 @@ Após fazer suas alterações e commitar:
 version-control
 ```
 
-Ou com yarn dlx:
+Ou com npx (sem instalar):
 
 ```bash
-yarn dlx @ridio/version-control
+npx @ridiormf/version-control
 ```
 
 ### CLI - Smart Commit

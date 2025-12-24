@@ -1,5 +1,5 @@
 {
-  "name": "@ridio/version-control",
+  "name": "@ridiormf/version-control",
   "version": "1.1.0",
   "description": "Sistema inteligente de controle de versão que analisa commits e automatiza versionamento semântico (SemVer)",
   "main": "dist/index.js",
@@ -21,9 +21,9 @@
     "prepare": "yarn build",
     "prepublishOnly": "yarn clean && yarn build",
     "test": "echo \"Tests coming soon\" && exit 0",
-    "version": "node bin/version-control.js",
-    "version:test": "bash scripts/test-version.sh",
-    "commit": "node bin/smart-commit.js"
+    "version": "version-control",
+    "version:test": "version-control --test",
+    "commit": "smart-commit"
   },
   "keywords": [
     "version",
