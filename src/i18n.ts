@@ -73,7 +73,8 @@ i18next.init({
         noCommitFound: "No commit found. Make a commit first.",
 
         // Analyzer
-        breakingChange: "🔴 Commit indicates BREAKING change or functionality removal",
+        breakingChange:
+          "🔴 Commit indicates BREAKING change or functionality removal",
         configFilesModified: "🟡 Configuration files modified",
         newFeatureIndicated: "🟡 Commit indicates new feature",
         newFilesAdded: "new file(s) added",
@@ -135,7 +136,8 @@ i18next.init({
         toChangeLanguage: "To change language:",
         availableLanguages: "Available languages: en, pt, es, fr",
         languageSet: "Language set to",
-        languageCleared: "Language configuration cleared. Using system default.",
+        languageCleared:
+          "Language configuration cleared. Using system default.",
         invalidLanguage: "Invalid language. Available: en, pt, es, fr",
         currentLanguageIs: "Current language:",
         configuredManually: "manually configured",
@@ -170,14 +172,16 @@ i18next.init({
         defaultLabel: "padrão",
         invalidOption: "Opção inválida. Digite 1, 2 ou 3",
         pleaseEnterYesNo: "Por favor, digite 's' ou 'n'",
-        invalidResponse: "Resposta inválida. Digite 's' para sim ou 'n' para não",
+        invalidResponse:
+          "Resposta inválida. Digite 's' para sim ou 'n' para não",
         updatingFiles: "Atualizando arquivos...",
         versionUpdatedTo: "Versão atualizada para",
         error: "Erro:",
         noCommitFound: "Nenhum commit encontrado. Faça um commit primeiro.",
 
         // Analyzer
-        breakingChange: "🔴 Commit indica mudança BREAKING ou remoção de funcionalidade",
+        breakingChange:
+          "🔴 Commit indica mudança BREAKING ou remoção de funcionalidade",
         configFilesModified: "🟡 Arquivos de configuração modificados",
         newFeatureIndicated: "🟡 Commit indica nova funcionalidade",
         newFilesAdded: "arquivo(s) novo(s) adicionado(s)",
@@ -239,7 +243,8 @@ i18next.init({
         toChangeLanguage: "Para mudar o idioma:",
         availableLanguages: "Idiomas disponíveis: en, pt, es, fr",
         languageSet: "Idioma configurado para",
-        languageCleared: "Configuração de idioma removida. Usando padrão do sistema.",
+        languageCleared:
+          "Configuração de idioma removida. Usando padrão do sistema.",
         invalidLanguage: "Idioma inválido. Disponíveis: en, pt, es, fr",
         currentLanguageIs: "Idioma atual:",
         configuredManually: "configurado manualmente",
@@ -274,14 +279,16 @@ i18next.init({
         defaultLabel: "predeterminado",
         invalidOption: "Opción inválida. Ingrese 1, 2 o 3",
         pleaseEnterYesNo: "Por favor, ingrese 's' o 'n'",
-        invalidResponse: "Respuesta inválida. Ingrese 's' para sí o 'n' para no",
+        invalidResponse:
+          "Respuesta inválida. Ingrese 's' para sí o 'n' para no",
         updatingFiles: "Actualizando archivos...",
         versionUpdatedTo: "Versión actualizada a",
         error: "Error:",
         noCommitFound: "No se encontró commit. Haga un commit primero.",
 
         // Analyzer
-        breakingChange: "🔴 Commit indica cambio BREAKING o eliminación de funcionalidad",
+        breakingChange:
+          "🔴 Commit indica cambio BREAKING o eliminación de funcionalidad",
         configFilesModified: "🟡 Archivos de configuración modificados",
         newFeatureIndicated: "🟡 Commit indica nueva funcionalidad",
         newFilesAdded: "archivo(s) nuevo(s) agregado(s)",
@@ -343,7 +350,8 @@ i18next.init({
         toChangeLanguage: "Para cambiar el idioma:",
         availableLanguages: "Idiomas disponibles: en, pt, es, fr",
         languageSet: "Idioma configurado a",
-        languageCleared: "Configuración de idioma eliminada. Usando predeterminado del sistema.",
+        languageCleared:
+          "Configuración de idioma eliminada. Usando predeterminado del sistema.",
         invalidLanguage: "Idioma inválido. Disponibles: en, pt, es, fr",
         currentLanguageIs: "Idioma actual:",
         configuredManually: "configurado manualmente",
@@ -378,14 +386,16 @@ i18next.init({
         defaultLabel: "par défaut",
         invalidOption: "Option invalide. Entrez 1, 2 ou 3",
         pleaseEnterYesNo: "Veuillez entrer 'o' ou 'n'",
-        invalidResponse: "Réponse invalide. Entrez 'o' pour oui ou 'n' pour non",
+        invalidResponse:
+          "Réponse invalide. Entrez 'o' pour oui ou 'n' pour non",
         updatingFiles: "Mise à jour des fichiers...",
         versionUpdatedTo: "Version mise à jour vers",
         error: "Erreur:",
         noCommitFound: "Aucun commit trouvé. Faites un commit d'abord.",
 
         // Analyzer
-        breakingChange: "🔴 Commit indique un changement BREAKING ou suppression de fonctionnalité",
+        breakingChange:
+          "🔴 Commit indique un changement BREAKING ou suppression de fonctionnalité",
         configFilesModified: "🟡 Fichiers de configuration modifiés",
         newFeatureIndicated: "🟡 Commit indique une nouvelle fonctionnalité",
         newFilesAdded: "nouveau(x) fichier(s) ajouté(s)",
@@ -447,7 +457,8 @@ i18next.init({
         toChangeLanguage: "Pour changer la langue:",
         availableLanguages: "Langues disponibles: en, pt, es, fr",
         languageSet: "Langue configurée à",
-        languageCleared: "Configuration de langue supprimée. Utilisation du système par défaut.",
+        languageCleared:
+          "Configuration de langue supprimée. Utilisation du système par défaut.",
         invalidLanguage: "Langue invalide. Disponibles: en, pt, es, fr",
         currentLanguageIs: "Langue actuelle:",
         configuredManually: "configurée manuellement",

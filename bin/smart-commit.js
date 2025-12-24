@@ -31,7 +31,9 @@ function showLanguageInfo() {
     }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
   );
   console.log(
-    `  ${t("toChangeLanguage")} ${colors.cyan}version-control config --lang <code>${colors.reset}`
+    `  ${t("toChangeLanguage")} ${
+      colors.cyan
+    }version-control config --lang <code>${colors.reset}`
   );
   console.log("");
 }
@@ -47,7 +49,9 @@ async function main() {
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log(
-    `${colors.bold}${colors.cyan}              ${t("smartCommit")}${colors.reset}`
+    `${colors.bold}${colors.cyan}              ${t("smartCommit")}${
+      colors.reset
+    }`
   );
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
@@ -97,7 +101,9 @@ async function main() {
   });
 
   if (changes.length > 10) {
-    console.log(`  ... ${t("andMore")} ${changes.length - 10} ${t("andMoreFiles")}`);
+    console.log(
+      `  ... ${t("andMore")} ${changes.length - 10} ${t("andMoreFiles")}`
+    );
   }
   console.log("");
 
@@ -119,7 +125,9 @@ async function main() {
     );
   }
   console.log(
-    `  ${t("description")} ${colors.cyan}${suggestion.description}${colors.reset}`
+    `  ${t("description")} ${colors.cyan}${suggestion.description}${
+      colors.reset
+    }`
   );
   console.log("");
 
@@ -130,7 +138,11 @@ async function main() {
   while (true) {
     choice = await question(
       rl,
-      `${colors.bold}${t("options")} [1] ${t("optionCommit")} [2] ${t("optionEdit")} [3] ${t("optionCancel")} (${t("defaultLabel")}: 1)\n${t("choice")}${colors.reset} `
+      `${colors.bold}${t("options")} [1] ${t("optionCommit")} [2] ${t(
+        "optionEdit"
+      )} [3] ${t("optionCancel")} (${t("defaultLabel")}: 1)\n${t("choice")}${
+        colors.reset
+      } `
     );
 
     // Default to option 1 if empty
