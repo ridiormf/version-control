@@ -51,9 +51,9 @@ export function updateIndexFile(
         );
         fs.writeFileSync(indexPath, content);
         console.log(
-          `${colors.green}✓${colors.reset} ${path.basename(indexPath)} ${
-            t("updated")
-          }`
+          `${colors.green}✓${colors.reset} ${path.basename(indexPath)} ${t(
+            "updated"
+          )}`
         );
         return;
       }
@@ -173,7 +173,97 @@ export function updateChangelog(
     lines.splice(insertIndex, 0, newEntry);
     fs.writeFileSync(changelogPath, lines.join("\n"));
     console.log(
-      `${colors.green}✓${colors.reset} ${t("changelogUpdated")} ${commits.length} ${t("commits")}`
+      `${colors.green}✓${colors.reset} ${t("changelogUpdated")} ${
+        commits.length
+      } ${t("commits")}`
     );
   }
+}
+
+/**
+ * Generate changelog content without writing to file
+ * @param version - New version string
+ * @param _type - Version bump type
+ * @param _analysis - Change analysis data
+ * @returns Generated changelog content
+ */
+export function generateChangelogContent(
+  version: string,
+  _type: VersionType,
+  _analysis: ChangeAnalysis
+): string {
+  const date = new Date().toISOString().split("T")[0];
+  const commits = getCommitsSinceLastTag();
+
+  if (commits.length === 0) {
+    return "";
+  }
+
+  const sections = groupCommitsByType(commits);
+  let newEntry = `\n## [${version}] - ${date}\n`;
+
+  const isFirstRelease = version === "1.0.0";
+
+  if (isFirstRelease) {
+    newEntry += `\n### 🎉 ${t("initialRelease")}\n\n`;
+    newEntry += `${t("firstPublicVersion")}\n\n`;
+  }
+
+  if (sections.breaking.length > 0) {
+    newEntry += `\n### ⚠️ Breaking Changes\n\n`;
+    removeDuplicates(sections.breaking).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.added.length > 0) {
+    newEntry += `\n### ✨ Added\n\n`;
+    removeDuplicates(sections.added).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.changed.length > 0) {
+    newEntry += `\n### 🔄 Changed\n\n`;
+    removeDuplicates(sections.changed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.deprecated.length > 0) {
+    newEntry += `\n### ⚠️ Deprecated\n\n`;
+    removeDuplicates(sections.deprecated).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.removed.length > 0) {
+    newEntry += `\n### 🗑️ Removed\n\n`;
+    removeDuplicates(sections.removed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.fixed.length > 0) {
+    newEntry += `\n### 🐛 Fixed\n\n`;
+    removeDuplicates(sections.fixed).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.security.length > 0) {
+    newEntry += `\n### 🔒 Security\n\n`;
+    removeDuplicates(sections.security).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.other.length > 0) {
+    newEntry += `\n### 📝 Other\n\n`;
+    removeDuplicates(sections.other).forEach((item) => {
+      newEntry += `- ${item}\n`;
+    });
+  }
+
+  return newEntry + "\n";
 }

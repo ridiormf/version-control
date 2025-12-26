@@ -25,6 +25,23 @@ import {
   getNoOptions,
 } from "./i18n";
 import { setLanguage, clearLanguage } from "./config";
+import { loadConfig } from "./configLoader";
+import {
+  bumpPrerelease,
+  graduatePrerelease,
+  isPrerelease,
+  validatePrereleaseId,
+} from "./prerelease";
+import {
+  previewPackageJsonChanges,
+  previewChangelogChanges,
+  showDryRunSummary,
+} from "./dryRun";
+import {
+  createGithubRelease,
+  getGithubInfo,
+  extractChangelogForVersion,
+} from "./githubRelease";
 
 /**
  * Show language info
@@ -102,15 +119,35 @@ function handleConfigCommand(args: string[]): void {
  * Main function
  */
 async function main(): Promise<void> {
-  // Check for config command
+  // Parse CLI arguments
   const args = process.argv.slice(2);
+
+  // CLI flags
+  const flags = {
+    ci: args.includes("--ci") || args.includes("--yes"),
+    test: args.includes("--test"),
+    dryRun: args.includes("--dry-run"),
+    skipVerify: args.includes("--skip-verify"),
+    release: args.includes("--release"),
+    prerelease: args
+      .find((arg) => arg.startsWith("--prerelease="))
+      ?.split("=")[1],
+    graduate: args.includes("--graduate"),
+  };
+
+  // Handle config command
   if (args[0] === "config") {
     handleConfigCommand(args.slice(1));
     return;
   }
 
-  // Check for updates to clear stdin buffer
-  await checkForUpdates().catch(() => {});
+  // Load configuration
+  const config = loadConfig();
+
+  // Check for updates to clear stdin buffer (only if not CI mode)
+  if (!flags.ci) {
+    await checkForUpdates().catch(() => {});
+  }
 
   // Destroy HTTP agents immediately after
   const http = require("http");
@@ -124,16 +161,18 @@ async function main(): Promise<void> {
   );
   console.log(
     `${colors.bold}${colors.cyan}          ${t("versionControl")}${
-      colors.reset
-    }`
+      flags.dryRun ? " (DRY-RUN)" : flags.ci ? " (CI MODE)" : ""
+    }${colors.reset}`
   );
   console.log(
     `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
   );
   console.log("");
 
-  // Show language info
-  showLanguageInfo();
+  // Show language info (only in interactive mode)
+  if (!flags.ci) {
+    showLanguageInfo();
+  }
 
   // Check if there's a commit
   const hasCommit = git("rev-parse HEAD 2>/dev/null");
@@ -179,146 +218,202 @@ async function main(): Promise<void> {
   analysis.reason.forEach((reason) => console.log(`  ${reason}`));
   console.log("");
 
-  // Suggest version
-  const suggestedVersion = bumpVersion(currentVersion, analysis.type);
-  const typeColors: Record<VersionType, string> = {
-    major: colors.red,
-    minor: colors.yellow,
-    patch: colors.green,
-  };
-  const typeEmojis: Record<VersionType, string> = {
-    major: "🔴",
-    minor: "🟡",
-    patch: "🟢",
-  };
-
-  console.log(
-    `${colors.bold}${t("suggestedType")}${colors.reset} ${
-      typeEmojis[analysis.type]
-    } ${typeColors[analysis.type]}${analysis.type.toUpperCase()}${colors.reset}`
-  );
-  console.log(
-    `${colors.bold}${t("newVersion")}${colors.reset} ${
-      colors.cyan
-    }${currentVersion}${colors.reset} → ${colors.green}${
-      colors.bold
-    }${suggestedVersion}${colors.reset}`
-  );
-  console.log("");
-
-  // Ask user with validation
-  const rl = createInterface();
-
-  let shouldUpdate = "";
-  while (true) {
-    shouldUpdate = await askChoice(
-      rl,
-      `${colors.bold}${t("updateVersion")}${colors.reset} `
-    );
-
-    const answer = shouldUpdate.toLowerCase();
-
-    if (!shouldUpdate) {
-      console.log(`${colors.red}${t("pleaseEnterYesNo")}${colors.reset}`);
-      continue;
-    }
-
-    const yesOptions = getYesOptions();
-    const noOptions = getNoOptions();
-
-    if (yesOptions.includes(answer) || noOptions.includes(answer)) {
-      break;
-    }
-
-    console.log(`${colors.red}${t("invalidResponse")}${colors.reset}`);
-  }
-
-  if (!getYesOptions().includes(shouldUpdate.toLowerCase())) {
-    console.log("");
-    console.log(`${colors.yellow}${t("versionNotChanged")}${colors.reset}`);
-
-    // Close everything properly
-    await closeInterface(rl);
-
-    // Destroy TTY streams manually
-    if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
-    if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
-    if ((rl as any)._ttyFd !== undefined) {
-      try {
-        require("fs").closeSync((rl as any)._ttyFd);
-      } catch (e) {}
-    }
-
-    // Force terminate with SIGTERM
-    process.kill(process.pid, "SIGTERM");
-  }
-
-  // Allow choosing a different type
-  console.log("");
-  console.log(`${colors.bold}${t("confirmVersionType")}${colors.reset}`);
-  console.log(
-    `  ${colors.red}1${colors.reset} - MAJOR (${bumpVersion(
-      currentVersion,
-      "major"
-    )}) - ${t("majorDesc")}`
-  );
-  console.log(
-    `  ${colors.yellow}2${colors.reset} - MINOR (${bumpVersion(
-      currentVersion,
-      "minor"
-    )}) - ${t("minorDesc")}`
-  );
-  console.log(
-    `  ${colors.green}3${colors.reset} - PATCH (${bumpVersion(
-      currentVersion,
-      "patch"
-    )}) - ${t("patchDesc")}`
-  );
-  console.log("");
-
-  const defaultChoice =
-    analysis.type === "major" ? "1" : analysis.type === "minor" ? "2" : "3";
-  let typeChoice = "";
-
-  while (true) {
-    typeChoice = await askChoice(
-      rl,
-      `${colors.bold}${t("choose")} (1/2/3) [${t(
-        "defaultLabel"
-      )}: ${defaultChoice}]:${colors.reset} `
-    );
-
-    // If empty, use default
-    if (!typeChoice) {
-      typeChoice = defaultChoice;
-      break;
-    }
-
-    // Validate if it's 1, 2 or 3
-    if (typeChoice === "1" || typeChoice === "2" || typeChoice === "3") {
-      break;
-    }
-
-    console.log(`${colors.red}${t("invalidOption")}${colors.reset}`);
-  }
-
+  // Calculate final version based on flags
+  let finalVersion: string;
   let finalType: VersionType = analysis.type;
-  if (typeChoice === "1") finalType = "major";
-  else if (typeChoice === "2") finalType = "minor";
-  else if (typeChoice === "3") finalType = "patch";
 
-  const finalVersion = bumpVersion(currentVersion, finalType);
+  if (flags.graduate && isPrerelease(currentVersion)) {
+    // Graduate from pre-release
+    finalVersion = graduatePrerelease(currentVersion);
+    console.log(
+      `${colors.cyan}ℹ${colors.reset} Graduating from pre-release to stable`
+    );
+  } else if (flags.prerelease) {
+    // Pre-release version
+    if (!validatePrereleaseId(flags.prerelease)) {
+      console.error(
+        `${colors.red}✗${colors.reset} Invalid pre-release identifier. Use: alpha, beta, or rc`
+      );
+      process.exit(1);
+    }
+    finalVersion = bumpPrerelease(
+      currentVersion,
+      analysis.type,
+      flags.prerelease
+    );
+    console.log(
+      `${colors.cyan}ℹ${colors.reset} Creating pre-release version: ${flags.prerelease}`
+    );
+  } else {
+    // Normal version bump
+    const suggestedVersion = bumpVersion(currentVersion, analysis.type);
 
-  // Close readline interface BEFORE updating files
-  await closeInterface(rl);
+    // In CI mode or with --yes, use suggested version
+    if (flags.ci) {
+      finalVersion = suggestedVersion;
+    } else {
+      // Interactive mode - ask user
+      const typeColors: Record<VersionType, string> = {
+        major: colors.red,
+        minor: colors.yellow,
+        patch: colors.green,
+      };
+      const typeEmojis: Record<VersionType, string> = {
+        major: "🔴",
+        minor: "🟡",
+        patch: "🟢",
+      };
 
-  // Destroy TTY streams manually
-  if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
-  if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
-  if ((rl as any)._ttyFd !== undefined) {
-    try {
-      require("fs").closeSync((rl as any)._ttyFd);
-    } catch (e) {}
+      console.log(
+        `${colors.bold}${t("suggestedType")}${colors.reset} ${
+          typeEmojis[analysis.type]
+        } ${typeColors[analysis.type]}${analysis.type.toUpperCase()}${
+          colors.reset
+        }`
+      );
+      console.log(
+        `${colors.bold}${t("newVersion")}${colors.reset} ${
+          colors.cyan
+        }${currentVersion}${colors.reset} → ${colors.green}${
+          colors.bold
+        }${suggestedVersion}${colors.reset}`
+      );
+      console.log("");
+
+      // Ask user with validation
+      const rl = createInterface();
+
+      let shouldUpdate = "";
+      while (true) {
+        shouldUpdate = await askChoice(
+          rl,
+          `${colors.bold}${t("updateVersion")}${colors.reset} `
+        );
+
+        const answer = shouldUpdate.toLowerCase();
+
+        if (!shouldUpdate) {
+          console.log(`${colors.red}${t("pleaseEnterYesNo")}${colors.reset}`);
+          continue;
+        }
+
+        const yesOptions = getYesOptions();
+        const noOptions = getNoOptions();
+
+        if (yesOptions.includes(answer) || noOptions.includes(answer)) {
+          break;
+        }
+
+        console.log(`${colors.red}${t("invalidResponse")}${colors.reset}`);
+      }
+
+      if (!getYesOptions().includes(shouldUpdate.toLowerCase())) {
+        console.log("");
+        console.log(`${colors.yellow}${t("versionNotChanged")}${colors.reset}`);
+        await closeInterface(rl);
+        if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
+        if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
+        if ((rl as any)._ttyFd !== undefined) {
+          try {
+            require("fs").closeSync((rl as any)._ttyFd);
+          } catch (e) {}
+        }
+        process.kill(process.pid, "SIGTERM");
+      }
+
+      // Allow choosing a different type
+      console.log("");
+      console.log(`${colors.bold}${t("confirmVersionType")}${colors.reset}`);
+      console.log(
+        `  ${colors.red}1${colors.reset} - MAJOR (${bumpVersion(
+          currentVersion,
+          "major"
+        )}) - ${t("majorDesc")}`
+      );
+      console.log(
+        `  ${colors.yellow}2${colors.reset} - MINOR (${bumpVersion(
+          currentVersion,
+          "minor"
+        )}) - ${t("minorDesc")}`
+      );
+      console.log(
+        `  ${colors.green}3${colors.reset} - PATCH (${bumpVersion(
+          currentVersion,
+          "patch"
+        )}) - ${t("patchDesc")}`
+      );
+      console.log("");
+
+      const defaultChoice =
+        analysis.type === "major" ? "1" : analysis.type === "minor" ? "2" : "3";
+      let typeChoice = "";
+
+      while (true) {
+        typeChoice = await askChoice(
+          rl,
+          `${colors.bold}${t("choose")} (1/2/3) [${t(
+            "defaultLabel"
+          )}: ${defaultChoice}]:${colors.reset} `
+        );
+
+        if (!typeChoice) {
+          typeChoice = defaultChoice;
+          break;
+        }
+
+        if (typeChoice === "1" || typeChoice === "2" || typeChoice === "3") {
+          break;
+        }
+
+        console.log(`${colors.red}${t("invalidOption")}${colors.reset}`);
+      }
+
+      if (typeChoice === "1") finalType = "major";
+      else if (typeChoice === "2") finalType = "minor";
+      else if (typeChoice === "3") finalType = "patch";
+
+      finalVersion = bumpVersion(currentVersion, finalType);
+
+      // Close readline interface BEFORE updating files
+      await closeInterface(rl);
+      if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
+      if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
+      if ((rl as any)._ttyFd !== undefined) {
+        try {
+          require("fs").closeSync((rl as any)._ttyFd);
+        } catch (e) {}
+      }
+    }
+  }
+
+  // DRY-RUN mode: show preview and exit
+  if (flags.dryRun) {
+    previewPackageJsonChanges(currentVersion, finalVersion);
+
+    // Generate changelog preview
+    const changelogContent = require("./updater").generateChangelogContent(
+      finalVersion,
+      finalType,
+      analysis
+    );
+    previewChangelogChanges(changelogContent);
+
+    showDryRunSummary(currentVersion, finalVersion, {
+      files: 2 + analysis.filesChanged.length,
+      additions: 10,
+      deletions: 2,
+    });
+
+    process.exit(0);
+  }
+
+  // TEST mode: skip git operations
+  if (flags.test) {
+    console.log("");
+    console.log(
+      `${colors.yellow}⚠ TEST MODE${colors.reset} - Files will be updated but no git operations`
+    );
+    console.log("");
   }
 
   // Update files
@@ -326,9 +421,15 @@ async function main(): Promise<void> {
   console.log(`${colors.bold}${t("updatingFiles")}${colors.reset}`);
   console.log("");
 
-  updatePackageJson(finalVersion);
+  if (!config.skip?.changelog) {
+    updateChangelog(finalVersion, finalType, analysis);
+  }
+
+  if (config.bumpFiles?.includes("package.json")) {
+    updatePackageJson(finalVersion);
+  }
+
   updateIndexFile(finalVersion);
-  updateChangelog(finalVersion, finalType, analysis);
 
   console.log("");
   console.log(
@@ -338,8 +439,42 @@ async function main(): Promise<void> {
   );
   console.log("");
 
-  // Execute git commands automatically
-  executeGitCommands(finalVersion);
+  // Execute git commands (skip in test mode)
+  if (!flags.test && !config.skip?.commit) {
+    executeGitCommands(finalVersion);
+  }
+
+  // Create GitHub release if requested
+  if (flags.release && config.createGithubRelease) {
+    const githubInfo = getGithubInfo();
+    if (githubInfo && config.githubToken) {
+      console.log("");
+      console.log(`${colors.cyan}📦 Creating GitHub release...${colors.reset}`);
+
+      const releaseBody = extractChangelogForVersion(finalVersion);
+      const success = await createGithubRelease({
+        owner: githubInfo.owner,
+        repo: githubInfo.repo,
+        tag: `v${finalVersion}`,
+        name: `Release v${finalVersion}`,
+        body: releaseBody,
+        token: config.githubToken,
+        prerelease: isPrerelease(finalVersion),
+      });
+
+      if (success) {
+        console.log(`${colors.green}✓ GitHub release created!${colors.reset}`);
+      }
+    } else if (!githubInfo) {
+      console.warn(
+        `${colors.yellow}⚠ No GitHub repository found in package.json${colors.reset}`
+      );
+    } else if (!config.githubToken) {
+      console.warn(
+        `${colors.yellow}⚠ No GitHub token configured. Set githubToken in .versionrc.js${colors.reset}`
+      );
+    }
+  }
 
   // Kill HTTP agents
   if (http.globalAgent) http.globalAgent.destroy();

@@ -14,6 +14,7 @@ export interface ChangeAnalysis {
 export interface Colors {
   reset: string;
   bold: string;
+  dim: string;
   red: string;
   green: string;
   yellow: string;
