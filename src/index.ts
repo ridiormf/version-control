@@ -2,7 +2,7 @@
 
 /**
  * Version Control System - Main CLI
- * @version 3.0.0
+ * @version 3.0.1
  *
  * Intelligent version control system that analyzes Git commits
  * and automates semantic versioning (SemVer).
@@ -325,7 +325,7 @@ async function main(): Promise<void> {
             require("fs").closeSync((rl as any)._ttyFd);
           } catch (e) {}
         }
-        process.kill(process.pid, "SIGTERM");
+        process.exit(0);
       }
 
       // Allow choosing a different type
@@ -483,12 +483,11 @@ async function main(): Promise<void> {
     }
   }
 
-  // Kill HTTP agents
+  // Destroy HTTP agents to release any open handles
   if (http.globalAgent) http.globalAgent.destroy();
   if (https.globalAgent) https.globalAgent.destroy();
 
-  // Force terminate with SIGTERM
-  process.kill(process.pid, "SIGTERM");
+  process.exit(0);
 }
 
 // Export for programmatic use
