@@ -152,9 +152,11 @@ export function waitForEnter(message: string): void {
   try {
     const fd = fs.openSync("/dev/tty", "r");
     const buf = Buffer.alloc(1);
-    // Read one byte (the \n produced by the Enter key)
+    // Read one byte (Enter sends \r in raw mode or \n in cooked mode)
     fs.readSync(fd, buf, 0, 1, null);
     fs.closeSync(fd);
+    // Move cursor to next line so the terminal looks correct after Enter
+    process.stdout.write("\n");
   } catch {
     // /dev/tty not available (CI, piped stdin) — skip silently
   }
