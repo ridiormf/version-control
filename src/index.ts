@@ -487,6 +487,16 @@ async function main(): Promise<void> {
   if (http.globalAgent) http.globalAgent.destroy();
   if (https.globalAgent) https.globalAgent.destroy();
 
+  // In interactive mode, wait for the user to press Enter before closing
+  if (!flags.ci && !flags.dryRun && !flags.test) {
+    const rlFinal = createInterface();
+    await askChoice(
+      rlFinal,
+      `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
+    );
+    await closeInterface(rlFinal);
+  }
+
   process.exit(0);
 }
 

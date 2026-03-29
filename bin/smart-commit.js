@@ -29,12 +29,12 @@ function showLanguageInfo() {
   console.log(
     `${colors.cyan}ℹ${colors.reset} ${t("currentLanguageIs")} ${
       colors.bold
-    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
+    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`,
   );
   console.log(
     `  ${t("toChangeLanguage")} ${
       colors.cyan
-    }version-control config --lang <code>${colors.reset}`
+    }version-control config --lang <code>${colors.reset}`,
   );
   console.log("");
 }
@@ -53,15 +53,15 @@ async function main() {
 
   console.log("");
   console.log(
-    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
+    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`,
   );
   console.log(
     `${colors.bold}${colors.cyan}              ${t("smartCommit")}${
       colors.reset
-    }`
+    }`,
   );
   console.log(
-    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
+    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`,
   );
   console.log(`${colors.yellow}[LOCAL VERSION]${colors.reset}`);
   console.log("");
@@ -80,10 +80,10 @@ async function main() {
     console.log(`${colors.bold}${t("howToUse")}${colors.reset}`);
     console.log(`  1. ${t("makeChanges")}`);
     console.log(
-      `  2. ${t("stageFiles")} ${colors.cyan}git add <files>${colors.reset}`
+      `  2. ${t("stageFiles")} ${colors.cyan}git add <files>${colors.reset}`,
     );
     console.log(
-      `  3. ${t("runCommand")} ${colors.cyan}yarn commit${colors.reset}`
+      `  3. ${t("runCommand")} ${colors.cyan}yarn commit${colors.reset}`,
     );
     console.log("");
     process.exit(0);
@@ -93,24 +93,24 @@ async function main() {
   const changes = getStagedChanges();
 
   console.log(
-    `${colors.bold}${t("stagedFiles")}${colors.reset} ${changes.length}`
+    `${colors.bold}${t("stagedFiles")}${colors.reset} ${changes.length}`,
   );
   changes.slice(0, 10).forEach((change) => {
     const icon =
       change.status === "added"
         ? "✨"
         : change.status === "deleted"
-        ? "🗑️"
-        : "📝";
+          ? "🗑️"
+          : "📝";
     const stats = `(+${change.additions}/-${change.deletions})`;
     console.log(
-      `  ${icon} ${change.path} ${colors.cyan}${stats}${colors.reset}`
+      `  ${icon} ${change.path} ${colors.cyan}${stats}${colors.reset}`,
     );
   });
 
   if (changes.length > 10) {
     console.log(
-      `  ... ${t("andMore")} ${changes.length - 10} ${t("andMoreFiles")}`
+      `  ... ${t("andMore")} ${changes.length - 10} ${t("andMoreFiles")}`,
     );
   }
   console.log("");
@@ -129,13 +129,13 @@ async function main() {
   console.log(`  ${t("type")} ${colors.cyan}${suggestion.type}${colors.reset}`);
   if (suggestion.scope) {
     console.log(
-      `  ${t("scope")} ${colors.cyan}${suggestion.scope}${colors.reset}`
+      `  ${t("scope")} ${colors.cyan}${suggestion.scope}${colors.reset}`,
     );
   }
   console.log(
     `  ${t("description")} ${colors.cyan}${suggestion.description}${
       colors.reset
-    }`
+    }`,
   );
   console.log("");
 
@@ -147,10 +147,10 @@ async function main() {
     choice = await askChoice(
       rl,
       `${colors.bold}${t("options")} [1] ${t("optionCommit")} [2] ${t(
-        "optionEdit"
+        "optionEdit",
       )} [3] ${t("optionCancel")} (${t("defaultLabel")}: 1)\n${t("choice")}${
         colors.reset
-      } `
+      } `,
     );
 
     // Default to option 1 if empty
@@ -169,16 +169,31 @@ async function main() {
 
   if (choice === "2") {
     console.log("");
-    finalMessage = await askText(
-      rl,
-      `${colors.bold}${t("enterCommitMessage")}${colors.reset} `
-    );
+    // Conventional commits: type(scope): description  OR  type: description
+    const conventionalRe = /^\w+(?:\([^)]+\))?!?:\s*.+$/;
 
-    if (!finalMessage.trim()) {
-      console.log("");
-      console.log(`${colors.red}${t("emptyMessage")}${colors.reset}`);
-      await closeInterface(rl);
-      process.exit(1);
+    while (true) {
+      finalMessage = await askText(
+        rl,
+        `${colors.bold}${t("enterCommitMessage")}${colors.reset} `,
+      );
+
+      if (!finalMessage.trim()) {
+        console.log("");
+        console.log(`${colors.red}${t("emptyMessage")}${colors.reset}`);
+        await closeInterface(rl);
+        process.exit(1);
+      }
+
+      if (!conventionalRe.test(finalMessage.trim())) {
+        console.log(
+          `${colors.red}✗${colors.reset} ${t("conventionalCommitHint")}`,
+        );
+        console.log("");
+        continue;
+      }
+
+      break;
     }
   } else if (choice === "3") {
     console.log("");
@@ -201,7 +216,7 @@ async function main() {
 
     console.log("");
     console.log(
-      `${colors.green}${colors.bold}✓ ${t("commitSuccess")}${colors.reset}`
+      `${colors.green}${colors.bold}✓ ${t("commitSuccess")}${colors.reset}`,
     );
     console.log("");
 
