@@ -318,13 +318,6 @@ async function main(): Promise<void> {
         console.log("");
         updateChangelogUnreleased(analysis);
         await closeInterface(rl);
-        if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
-        if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
-        if ((rl as any)._ttyFd !== undefined) {
-          try {
-            require("fs").closeSync((rl as any)._ttyFd);
-          } catch (e) {}
-        }
         process.exit(0);
       }
 
@@ -381,15 +374,8 @@ async function main(): Promise<void> {
 
       finalVersion = bumpVersion(currentVersion, finalType);
 
-      // Close readline interface BEFORE updating files
+      // Close readline interface before updating files
       await closeInterface(rl);
-      if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
-      if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
-      if ((rl as any)._ttyFd !== undefined) {
-        try {
-          require("fs").closeSync((rl as any)._ttyFd);
-        } catch (e) {}
-      }
     }
   }
 
@@ -489,12 +475,22 @@ async function main(): Promise<void> {
 
   // In interactive mode, wait for the user to press Enter before closing
   if (!flags.ci && !flags.dryRun && !flags.test) {
-    const rlFinal = createInterface();
-    await askChoice(
-      rlFinal,
-      `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
-    );
-    await closeInterface(rlFinal);
+    await new Promise<void>((resolve) => {
+      process.stdout.write(
+        `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
+      );
+      const rl2 = require("readline").createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false,
+      });
+      rl2.question("", () => {
+        rl2.close();
+        resolve();
+      });
+      // Also resolve on EOF / closed stdin (e.g. when piped)
+      rl2.once("close", resolve);
+    });
   }
 
   process.exit(0);

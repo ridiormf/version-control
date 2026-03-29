@@ -202,8 +202,6 @@ async function main() {
     process.exit(0);
   }
 
-  await closeInterface(rl);
-
   // Execute commit
   console.log("");
   console.log(`${colors.bold}${t("committing")}${colors.reset}`);
@@ -218,31 +216,19 @@ async function main() {
     console.log(
       `${colors.green}${colors.bold}✓ ${t("commitSuccess")}${colors.reset}`,
     );
-    console.log("");
 
-    // Close everything
-    rl.close();
-    if (rl._ttyInput) rl._ttyInput.destroy();
-    if (rl._ttyOutput) rl._ttyOutput.destroy();
-    if (rl._ttyFd !== undefined) {
-      try {
-        require("fs").closeSync(rl._ttyFd);
-      } catch (e) {}
-    }
+    // Wait for user to press Enter, then close rl once
+    await askText(
+      rl,
+      `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
+    );
+    await closeInterface(rl);
 
     // Destroy HTTP agents to release open handles
     const http = require("http");
     const https = require("https");
     if (http.globalAgent) http.globalAgent.destroy();
     if (https.globalAgent) https.globalAgent.destroy();
-
-    // Wait for user to press Enter before closing
-    const rlFinal = createInterface();
-    await askText(
-      rlFinal,
-      `${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
-    );
-    await closeInterface(rlFinal);
 
     process.exit(0);
   } catch (error) {
