@@ -22,6 +22,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 
 
+
+## [3.0.3] - 2026-03-29
+
+### 🐛 Fixed
+
+- **src**: resolve issues
+
+
 ## [3.0.2] - 2026-03-29
 
 ### 🔄 Changed
