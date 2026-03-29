@@ -155,8 +155,6 @@ export function waitForEnter(message: string): void {
     // Read one byte (Enter sends \r in raw mode or \n in cooked mode)
     fs.readSync(fd, buf, 0, 1, null);
     fs.closeSync(fd);
-    // Move cursor to next line so the terminal looks correct after Enter
-    process.stdout.write("\n");
   } catch {
     // /dev/tty not available (CI, piped stdin) — skip silently
   }
