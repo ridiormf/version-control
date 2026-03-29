@@ -49,7 +49,7 @@ export function createInterface(): ReadlineInterface {
  */
 export function question(
   rl: ReadlineInterface,
-  query: string
+  query: string,
 ): Promise<string> {
   return new Promise((resolve) => {
     rl.question(query, (answer: string) => {
@@ -66,7 +66,7 @@ export function question(
  */
 export function askChoice(
   rl: ReadlineInterface,
-  query: string
+  query: string,
 ): Promise<string> {
   return new Promise((resolve) => {
     // Flush any pending input
@@ -137,5 +137,25 @@ export async function closeInterface(rl: ReadlineInterface): Promise<void> {
     } catch (e) {
       // Ignore error
     }
+  }
+}
+
+/**
+ * Wait for the user to press Enter using a direct synchronous read from /dev/tty.
+ * This avoids all readline buffering issues that arise after execSync or
+ * after another readline interface has been closed.
+ * Falls back silently in environments where /dev/tty is unavailable (e.g. CI).
+ * @param message - Prompt to display before waiting
+ */
+export function waitForEnter(message: string): void {
+  process.stdout.write(message);
+  try {
+    const fd = fs.openSync("/dev/tty", "r");
+    const buf = Buffer.alloc(1);
+    // Read one byte (the \n produced by the Enter key)
+    fs.readSync(fd, buf, 0, 1, null);
+    fs.closeSync(fd);
+  } catch {
+    // /dev/tty not available (CI, piped stdin) — skip silently
   }
 }

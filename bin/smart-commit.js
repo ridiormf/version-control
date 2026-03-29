@@ -15,6 +15,7 @@ const {
   askChoice,
   askText,
   closeInterface,
+  waitForEnter,
 } = require("../dist/readline.js");
 const { checkForUpdates } = require("../dist/updateChecker.js");
 const { t, currentLanguage, isLanguageConfigured } = require("../dist/i18n.js");
@@ -202,6 +203,9 @@ async function main() {
     process.exit(0);
   }
 
+  // Close rl before handing control to execSync — prevents buffered newlines
+  await closeInterface(rl);
+
   // Execute commit
   console.log("");
   console.log(`${colors.bold}${t("committing")}${colors.reset}`);
@@ -217,19 +221,13 @@ async function main() {
       `${colors.green}${colors.bold}✓ ${t("commitSuccess")}${colors.reset}`,
     );
 
-    // Wait for user to press Enter, then close rl once
-    await askText(
-      rl,
-      `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
-    );
-    await closeInterface(rl);
-
     // Destroy HTTP agents to release open handles
     const http = require("http");
     const https = require("https");
     if (http.globalAgent) http.globalAgent.destroy();
     if (https.globalAgent) https.globalAgent.destroy();
 
+    waitForEnter(`\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`);
     process.exit(0);
   } catch (error) {
     console.log("");

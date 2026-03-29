@@ -18,7 +18,12 @@ import {
   updateChangelog,
   updateChangelogUnreleased,
 } from "./updater";
-import { createInterface, askChoice, closeInterface } from "./readline";
+import {
+  createInterface,
+  askChoice,
+  closeInterface,
+  waitForEnter,
+} from "./readline";
 import { executeGitCommands } from "./gitCommands";
 import { VersionType } from "./types";
 import { checkForUpdates } from "./updateChecker";
@@ -475,22 +480,7 @@ async function main(): Promise<void> {
 
   // In interactive mode, wait for the user to press Enter before closing
   if (!flags.ci && !flags.dryRun && !flags.test) {
-    await new Promise<void>((resolve) => {
-      process.stdout.write(
-        `\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
-      );
-      const rl2 = require("readline").createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false,
-      });
-      rl2.question("", () => {
-        rl2.close();
-        resolve();
-      });
-      // Also resolve on EOF / closed stdin (e.g. when piped)
-      rl2.once("close", resolve);
-    });
+    waitForEnter(`\n${colors.dim}${t("pressEnterToFinish")}${colors.reset}`);
   }
 
   process.exit(0);
