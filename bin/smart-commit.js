@@ -230,14 +230,21 @@ async function main() {
       } catch (e) {}
     }
 
-    // Kill HTTP agents
+    // Destroy HTTP agents to release open handles
     const http = require("http");
     const https = require("https");
     if (http.globalAgent) http.globalAgent.destroy();
     if (https.globalAgent) https.globalAgent.destroy();
 
-    // Force terminate with SIGKILL
-    process.kill(process.pid, "SIGTERM");
+    // Wait for user to press Enter before closing
+    const rlFinal = createInterface();
+    await askText(
+      rlFinal,
+      `${colors.dim}${t("pressEnterToFinish")}${colors.reset}`,
+    );
+    await closeInterface(rlFinal);
+
+    process.exit(0);
   } catch (error) {
     console.log("");
     console.log(`${colors.red}✗ ${t("commitFailed")}${colors.reset}`);
