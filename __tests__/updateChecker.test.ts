@@ -58,7 +58,8 @@ describe("updateChecker", () => {
       const mockResponse: any = {
         on: jest.fn((event, callback) => {
           if (event === "data") {
-            callback(JSON.stringify({ version: "2.0.0" }));
+            // Use a version that will always be ahead of whatever package.json says
+            callback(JSON.stringify({ version: "999.0.0" }));
           }
           if (event === "end") {
             callback();
@@ -76,7 +77,7 @@ describe("updateChecker", () => {
             on: jest.fn(),
             destroy: jest.fn(),
           };
-        }
+        },
       );
 
       await checkForUpdates();
@@ -105,7 +106,7 @@ describe("updateChecker", () => {
             on: jest.fn(),
             destroy: jest.fn(),
           };
-        }
+        },
       );
 
       await checkForUpdates();
@@ -113,7 +114,7 @@ describe("updateChecker", () => {
       // Should not display update message
       const calls = (console.log as jest.Mock).mock.calls;
       const hasUpdateMessage = calls.some((call) =>
-        call.some((arg: string) => String(arg).includes("Update available"))
+        call.some((arg: string) => String(arg).includes("Update available")),
       );
       expect(hasUpdateMessage).toBe(false);
     });
@@ -155,7 +156,7 @@ describe("updateChecker", () => {
             on: jest.fn(),
             destroy: jest.fn(),
           };
-        }
+        },
       );
 
       // Should not throw

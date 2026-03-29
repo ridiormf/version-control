@@ -3,6 +3,7 @@ import * as path from "path";
 import { ChangeAnalysis, VersionType } from "./types";
 import { colors } from "./colors";
 import {
+  CommitInfo,
   getCommitsSinceLastTag,
   groupCommitsByType,
   removeDuplicates,
@@ -16,7 +17,7 @@ import { t } from "./i18n";
  */
 export function updatePackageJson(
   newVersion: string,
-  projectRoot: string = process.cwd()
+  projectRoot: string = process.cwd(),
 ): void {
   const packagePath = path.join(projectRoot, "package.json");
   const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
@@ -32,7 +33,7 @@ export function updatePackageJson(
  */
 export function updateIndexFile(
   newVersion: string,
-  projectRoot: string = process.cwd()
+  projectRoot: string = process.cwd(),
 ): void {
   const possibleIndexFiles = [
     path.join(projectRoot, "index.js"),
@@ -47,18 +48,112 @@ export function updateIndexFile(
       if (content.includes("@version")) {
         content = content.replace(
           /@version \d+\.\d+\.\d+/,
-          `@version ${newVersion}`
+          `@version ${newVersion}`,
         );
         fs.writeFileSync(indexPath, content);
         console.log(
           `${colors.green}✓${colors.reset} ${path.basename(indexPath)} ${t(
-            "updated"
-          )}`
+            "updated",
+          )}`,
         );
         return;
       }
     }
   }
+}
+
+/**
+ * Remove [Unreleased] section from changelog content.
+ * Strips everything from the `## [Unreleased]` heading up to (but not including)
+ * the next `## [` heading, so the block is cleanly replaced on every run.
+ */
+function removeUnreleasedSection(content: string): string {
+  const lines = content.split("\n");
+  const startIndex = lines.findIndex((line) =>
+    /^## \[Unreleased\]/i.test(line),
+  );
+
+  if (startIndex === -1) return content;
+
+  // Find the next versioned ## [ heading after [Unreleased]
+  const endIndex = lines.findIndex(
+    (line, i) => i > startIndex && /^## \[\d/.test(line),
+  );
+
+  if (endIndex === -1) {
+    // [Unreleased] is the last (or only) section — remove to end
+    lines.splice(startIndex, lines.length - startIndex);
+  } else {
+    lines.splice(startIndex, endIndex - startIndex);
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Build an `## [Unreleased]` markdown block from the given commit list.
+ */
+function buildUnreleasedEntry(commits: CommitInfo[]): string {
+  const sections = groupCommitsByType(commits);
+  let entry = `## [Unreleased]\n`;
+
+  if (sections.breaking.length > 0) {
+    entry += `\n### ⚠️ Breaking Changes\n\n`;
+    removeDuplicates(sections.breaking).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.added.length > 0) {
+    entry += `\n### ✨ Added\n\n`;
+    removeDuplicates(sections.added).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.changed.length > 0) {
+    entry += `\n### 🔄 Changed\n\n`;
+    removeDuplicates(sections.changed).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.deprecated.length > 0) {
+    entry += `\n### ⚠️ Deprecated\n\n`;
+    removeDuplicates(sections.deprecated).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.removed.length > 0) {
+    entry += `\n### 🗑️ Removed\n\n`;
+    removeDuplicates(sections.removed).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.fixed.length > 0) {
+    entry += `\n### 🐛 Fixed\n\n`;
+    removeDuplicates(sections.fixed).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.security.length > 0) {
+    entry += `\n### 🔒 Security\n\n`;
+    removeDuplicates(sections.security).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  if (sections.other.length > 0) {
+    entry += `\n### 📝 Other\n\n`;
+    removeDuplicates(sections.other).forEach((item) => {
+      entry += `- ${item}\n`;
+    });
+  }
+
+  return entry + "\n";
 }
 
 /**
@@ -72,7 +167,7 @@ export function updateChangelog(
   version: string,
   _type: VersionType,
   _analysis: ChangeAnalysis,
-  projectRoot: string = process.cwd()
+  projectRoot: string = process.cwd(),
 ): void {
   const changelogPath = path.join(projectRoot, "CHANGELOG.md");
 
@@ -81,7 +176,8 @@ export function updateChangelog(
     return;
   }
 
-  const content = fs.readFileSync(changelogPath, "utf8");
+  // Remove any [Unreleased] section — its content is now promoted to this versioned entry
+  let content = removeUnreleasedSection(fs.readFileSync(changelogPath, "utf8"));
   const date = new Date().toISOString().split("T")[0];
 
   // Get all commits since last tag
@@ -175,7 +271,7 @@ export function updateChangelog(
     console.log(
       `${colors.green}✓${colors.reset} ${t("changelogUpdated")} ${
         commits.length
-      } ${t("commits")}`
+      } ${t("commits")}`,
     );
   }
 }
@@ -190,7 +286,7 @@ export function updateChangelog(
 export function generateChangelogContent(
   version: string,
   _type: VersionType,
-  _analysis: ChangeAnalysis
+  _analysis: ChangeAnalysis,
 ): string {
   const date = new Date().toISOString().split("T")[0];
   const commits = getCommitsSinceLastTag();
@@ -266,4 +362,58 @@ export function generateChangelogContent(
   }
 
   return newEntry + "\n";
+}
+
+/**
+ * Update CHANGELOG.md with an `## [Unreleased]` section when the user
+ * declines the version bump.
+ *
+ * Behaviour across multiple runs:
+ * - First NO  → creates `[Unreleased]` with all commits since the last tag.
+ * - Subsequent NOs → replaces the existing `[Unreleased]` block with the
+ *   refreshed set of commits (getCommitsSinceLastTag always returns the full
+ *   accumulated list, so no duplicates arise).
+ * - When the user finally answers YES → updateChangelog() strips `[Unreleased]`
+ *   and replaces it with the proper versioned entry.
+ *
+ * @param _analysis - Change analysis data (kept for API compatibility)
+ * @param projectRoot - Root directory of the project
+ */
+export function updateChangelogUnreleased(
+  _analysis: ChangeAnalysis,
+  projectRoot: string = process.cwd(),
+): void {
+  const changelogPath = path.join(projectRoot, "CHANGELOG.md");
+
+  if (!fs.existsSync(changelogPath)) {
+    console.log(`${colors.yellow}⚠${colors.reset} ${t("changelogNotFound")}`);
+    return;
+  }
+
+  const commits = getCommitsSinceLastTag();
+
+  if (commits.length === 0) {
+    console.log(`${colors.yellow}⚠${colors.reset} ${t("noNewCommits")}`);
+    return;
+  }
+
+  // Replace (or create) the [Unreleased] section with the current commit set
+  let content = removeUnreleasedSection(fs.readFileSync(changelogPath, "utf8"));
+
+  const newEntry = buildUnreleasedEntry(commits);
+
+  const lines = content.split("\n");
+  // Insert before the first versioned ## [ entry
+  const insertIndex = lines.findIndex((line) => /^## \[\d/.test(line));
+
+  if (insertIndex !== -1) {
+    lines.splice(insertIndex, 0, newEntry);
+  } else {
+    lines.push(newEntry);
+  }
+
+  fs.writeFileSync(changelogPath, lines.join("\n"));
+  console.log(
+    `${colors.green}✓${colors.reset} ${t("changelogUnreleasedUpdated")} (${commits.length} ${t("commits")})`,
+  );
 }

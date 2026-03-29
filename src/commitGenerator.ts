@@ -144,15 +144,31 @@ export function generateCommitMessage(changes: FileChange[]): CommitSuggestion {
   // General updates
   else if (modifiedFiles.length > 0) {
     type = "refactor";
-    scope = detectScope(modifiedFiles);
+    const diffSummary = getDiffSummary(modifiedFiles);
+    scope = detectBestScope(modifiedFiles);
 
-    if (modifiedFiles.length === 1) {
+    if (diffSummary.newExports.length > 0) {
+      // New exports detected — this is a feature addition
+      type = "feat";
+      if (diffSummary.newExports.length === 1) {
+        description = `add ${diffSummary.newExports[0]}`;
+      } else if (diffSummary.newExports.length <= 3) {
+        const last = diffSummary.newExports[diffSummary.newExports.length - 1];
+        const rest = diffSummary.newExports.slice(0, -1).join(", ");
+        description = `add ${rest} and ${last}`;
+      } else {
+        description = `add ${diffSummary.newExports[0]} and ${diffSummary.newExports.length - 1} more functions`;
+      }
+    } else if (modifiedFiles.length === 1) {
       const fileName = getFileName(modifiedFiles[0].path);
       description = `update ${fileName}`;
-    } else if (changeTypes.totalChanges > 200) {
-      description = "major code refactoring";
     } else {
-      description = "improve code structure";
+      // Describe by the two most-changed files
+      const topFiles = [...modifiedFiles]
+        .sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions))
+        .slice(0, 2)
+        .map((f) => getFileName(f.path));
+      description = `update ${topFiles.join(" and ")}`;
     }
   }
 
@@ -278,10 +294,13 @@ function getMostCommonFileType(changes: FileChange[]): string {
 
   if (extensions.length === 0) return "files";
 
-  const counts = extensions.reduce((acc, ext) => {
-    acc[ext] = (acc[ext] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const counts = extensions.reduce(
+    (acc, ext) => {
+      acc[ext] = (acc[ext] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 
@@ -295,6 +314,87 @@ function getMostCommonFileType(changes: FileChange[]): string {
   };
 
   return typeMap[mostCommon] || mostCommon;
+}
+
+/**
+ * Interface for semantic diff summary
+ */
+interface DiffSummary {
+  /** Names of newly exported symbols (functions, classes, consts, interfaces) */
+  newExports: string[];
+}
+
+/**
+ * Read the staged diff and extract newly exported symbol names.
+ * This lets us say "add updateChangelogUnreleased" instead of "major code refactoring".
+ */
+function getDiffSummary(changes: FileChange[]): DiffSummary {
+  const exports: string[] = [];
+
+  for (const change of changes) {
+    const diff = git(`diff --cached -U0 -- "${change.path}"`);
+    const addedLines = diff
+      .split("\n")
+      .filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+
+    for (const line of addedLines) {
+      const content = line.slice(1).trim();
+
+      // export function / export async function
+      const fnMatch = content.match(/^export\s+(?:async\s+)?function\s+(\w+)/);
+      if (fnMatch) exports.push(fnMatch[1]);
+
+      // export const / class / interface / type / enum
+      const declMatch = content.match(
+        /^export\s+(?:const|class|interface|type|enum)\s+(\w+)/,
+      );
+      if (declMatch) exports.push(declMatch[1]);
+    }
+  }
+
+  return { newExports: [...new Set(exports)] };
+}
+
+/**
+ * Generic top-level directories that are too broad to use as a scope.
+ * For these, we fall back to the most-changed file’s name.
+ */
+const GENERIC_DIRS = ["src", "lib", "dist", "app"];
+
+/**
+ * Pick the best scope:
+ * - If all files share the same meaningful directory (e.g. "api", "services"), use that.
+ * - For generic dirs ("src", "lib") or mixed dirs, use the most-changed file’s base name.
+ */
+function detectBestScope(changes: FileChange[]): string | undefined {
+  const dirs = changes
+    .map((c) => {
+      const parts = c.path.split("/");
+      return parts.length > 1 ? parts[0] : "";
+    })
+    .filter(Boolean);
+
+  // All files share one meaningful directory — use it as scope
+  if (
+    dirs.length > 0 &&
+    dirs.every((d) => d === dirs[0]) &&
+    !GENERIC_DIRS.includes(dirs[0])
+  ) {
+    return dirs[0];
+  }
+
+  // Generic dir or mixed dirs — use most-changed file’s base name
+  const sorted = [...changes].sort(
+    (a, b) => b.additions + b.deletions - (a.additions + a.deletions),
+  );
+  const topName = getFileName(sorted[0].path);
+
+  // Don’t use overly generic file names as scope
+  if (["index", "main", "app", "utils", "helpers"].includes(topName)) {
+    return detectScope(changes);
+  }
+
+  return topName;
 }
 
 /**

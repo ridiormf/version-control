@@ -87,6 +87,8 @@ i18next.init({
         changelogNotFound: "CHANGELOG.md not found",
         noNewCommits: "No new commits found",
         changelogUpdated: "CHANGELOG.md updated with",
+        changelogUnreleasedUpdated:
+          "CHANGELOG.md updated with unreleased changes",
         commits: "commit(s)",
         initialRelease: "Initial Release",
         firstPublicVersion: "First public release of the project.",
@@ -194,6 +196,8 @@ i18next.init({
         changelogNotFound: "CHANGELOG.md não encontrado",
         noNewCommits: "Nenhum commit novo encontrado",
         changelogUpdated: "CHANGELOG.md atualizado com",
+        changelogUnreleasedUpdated:
+          "CHANGELOG.md atualizado com alterações pendentes",
         commits: "commit(s)",
         initialRelease: "Lançamento Inicial",
         firstPublicVersion: "Primeira versão pública do projeto.",
@@ -301,6 +305,8 @@ i18next.init({
         changelogNotFound: "CHANGELOG.md no encontrado",
         noNewCommits: "No se encontraron commits nuevos",
         changelogUpdated: "CHANGELOG.md actualizado con",
+        changelogUnreleasedUpdated:
+          "CHANGELOG.md actualizado con cambios pendientes",
         commits: "commit(s)",
         initialRelease: "Lanzamiento Inicial",
         firstPublicVersion: "Primera versión pública del proyecto.",
@@ -408,6 +414,8 @@ i18next.init({
         changelogNotFound: "CHANGELOG.md non trouvé",
         noNewCommits: "Aucun nouveau commit trouvé",
         changelogUpdated: "CHANGELOG.md mis à jour avec",
+        changelogUnreleasedUpdated:
+          "CHANGELOG.md mis à jour avec les changements en attente",
         commits: "commit(s)",
         initialRelease: "Version Initiale",
         firstPublicVersion: "Première version publique du projet.",

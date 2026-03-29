@@ -19,6 +19,24 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 
 
+
+
+## [3.0.0] - 2026-03-29
+
+### ✨ Added
+
+- add enterprise-grade ci/cd features and github integration
+- **__tests__**: add integration-single-enter.test
+
+
+## [2.0.0] - 2026-03-29
+
+### ✨ Added
+
+- add enterprise-grade ci/cd features and github integration
+- **__tests__**: add integration-single-enter.test
+
+
 ## [1.1.4] - 2025-12-24
 
 ### 🐛 Fixed

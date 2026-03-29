@@ -256,8 +256,9 @@ describe("commitGenerator", () => {
 
       const result = generateCommitMessage(changes);
 
+      // src/ is a generic dir — scope falls back to most-changed file name
       expect(result.type).toBe("refactor");
-      expect(result.scope).toBe("src");
+      expect(result.scope).toBe("file1");
     });
 
     it("should detect major refactoring", () => {
@@ -278,8 +279,9 @@ describe("commitGenerator", () => {
 
       const result = generateCommitMessage(changes);
 
+      // Large multi-file changes: type is refactor, description names the top files
       expect(result.type).toBe("refactor");
-      expect(result.description).toContain("major");
+      expect(result.description).toContain("big");
     });
 
     it("should handle multiple new files of same type", () => {

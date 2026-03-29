@@ -2,7 +2,7 @@
 
 /**
  * Version Control System - Main CLI
- * @version 1.1.4
+ * @version 3.0.0
  *
  * Intelligent version control system that analyzes Git commits
  * and automates semantic versioning (SemVer).
@@ -12,7 +12,12 @@ import { colors } from "./colors";
 import { git } from "./git";
 import { getCurrentVersion, bumpVersion } from "./version";
 import { analyzeChanges } from "./analyzer";
-import { updatePackageJson, updateIndexFile, updateChangelog } from "./updater";
+import {
+  updatePackageJson,
+  updateIndexFile,
+  updateChangelog,
+  updateChangelogUnreleased,
+} from "./updater";
 import { createInterface, askChoice, closeInterface } from "./readline";
 import { executeGitCommands } from "./gitCommands";
 import { VersionType } from "./types";
@@ -53,12 +58,12 @@ function showLanguageInfo(): void {
   console.log(
     `${colors.cyan}ℹ${colors.reset} ${t("currentLanguageIs")} ${
       colors.bold
-    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`
+    }${currentLanguage.toUpperCase()}${colors.reset} (${source})`,
   );
   console.log(
     `  ${t("toChangeLanguage")} ${
       colors.cyan
-    }version-control config --lang <code>${colors.reset}`
+    }version-control config --lang <code>${colors.reset}`,
   );
   console.log("");
 }
@@ -76,7 +81,7 @@ function handleConfigCommand(args: string[]): void {
       console.log(
         `${colors.green}✓${colors.reset} ${t("languageSet")} ${
           colors.bold
-        }${lang.toUpperCase()}${colors.reset}`
+        }${lang.toUpperCase()}${colors.reset}`,
       );
       console.log("");
       console.log(`${t("availableLanguages")}`);
@@ -106,10 +111,10 @@ function handleConfigCommand(args: string[]): void {
   showLanguageInfo();
   console.log(`${colors.bold}Commands:${colors.reset}`);
   console.log(
-    `  ${colors.cyan}version-control config --lang <code>${colors.reset} - Set language (en, pt, es, fr)`
+    `  ${colors.cyan}version-control config --lang <code>${colors.reset} - Set language (en, pt, es, fr)`,
   );
   console.log(
-    `  ${colors.cyan}version-control config --clear${colors.reset}      - Clear language config`
+    `  ${colors.cyan}version-control config --clear${colors.reset}      - Clear language config`,
   );
   console.log("");
   process.exit(0);
@@ -157,15 +162,15 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log(
-    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
+    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`,
   );
   console.log(
     `${colors.bold}${colors.cyan}          ${t("versionControl")}${
       flags.dryRun ? " (DRY-RUN)" : flags.ci ? " (CI MODE)" : ""
-    }${colors.reset}`
+    }${colors.reset}`,
   );
   console.log(
-    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`
+    `${colors.bold}${colors.cyan}═══════════════════════════════════════════════════════════${colors.reset}`,
   );
   console.log("");
 
@@ -186,7 +191,7 @@ async function main(): Promise<void> {
   console.log(
     `${colors.bold}${t("currentVersion")}${colors.reset} ${
       colors.cyan
-    }${currentVersion}${colors.reset}`
+    }${currentVersion}${colors.reset}`,
   );
   console.log("");
 
@@ -201,14 +206,14 @@ async function main(): Promise<void> {
   console.log(
     `${colors.bold}${t("filesModified")}${colors.reset} ${
       analysis.filesChanged.length
-    }`
+    }`,
   );
   analysis.filesChanged.slice(0, 5).forEach((file) => {
     console.log(`  - ${file}`);
   });
   if (analysis.filesChanged.length > 5) {
     console.log(
-      `  ... ${t("andMore")} ${analysis.filesChanged.length - 5} arquivo(s)`
+      `  ... ${t("andMore")} ${analysis.filesChanged.length - 5} arquivo(s)`,
     );
   }
   console.log("");
@@ -226,23 +231,23 @@ async function main(): Promise<void> {
     // Graduate from pre-release
     finalVersion = graduatePrerelease(currentVersion);
     console.log(
-      `${colors.cyan}ℹ${colors.reset} Graduating from pre-release to stable`
+      `${colors.cyan}ℹ${colors.reset} Graduating from pre-release to stable`,
     );
   } else if (flags.prerelease) {
     // Pre-release version
     if (!validatePrereleaseId(flags.prerelease)) {
       console.error(
-        `${colors.red}✗${colors.reset} Invalid pre-release identifier. Use: alpha, beta, or rc`
+        `${colors.red}✗${colors.reset} Invalid pre-release identifier. Use: alpha, beta, or rc`,
       );
       process.exit(1);
     }
     finalVersion = bumpPrerelease(
       currentVersion,
       analysis.type,
-      flags.prerelease
+      flags.prerelease,
     );
     console.log(
-      `${colors.cyan}ℹ${colors.reset} Creating pre-release version: ${flags.prerelease}`
+      `${colors.cyan}ℹ${colors.reset} Creating pre-release version: ${flags.prerelease}`,
     );
   } else {
     // Normal version bump
@@ -269,14 +274,14 @@ async function main(): Promise<void> {
           typeEmojis[analysis.type]
         } ${typeColors[analysis.type]}${analysis.type.toUpperCase()}${
           colors.reset
-        }`
+        }`,
       );
       console.log(
         `${colors.bold}${t("newVersion")}${colors.reset} ${
           colors.cyan
         }${currentVersion}${colors.reset} → ${colors.green}${
           colors.bold
-        }${suggestedVersion}${colors.reset}`
+        }${suggestedVersion}${colors.reset}`,
       );
       console.log("");
 
@@ -287,7 +292,7 @@ async function main(): Promise<void> {
       while (true) {
         shouldUpdate = await askChoice(
           rl,
-          `${colors.bold}${t("updateVersion")}${colors.reset} `
+          `${colors.bold}${t("updateVersion")}${colors.reset} `,
         );
 
         const answer = shouldUpdate.toLowerCase();
@@ -310,6 +315,8 @@ async function main(): Promise<void> {
       if (!getYesOptions().includes(shouldUpdate.toLowerCase())) {
         console.log("");
         console.log(`${colors.yellow}${t("versionNotChanged")}${colors.reset}`);
+        console.log("");
+        updateChangelogUnreleased(analysis);
         await closeInterface(rl);
         if ((rl as any)._ttyInput) (rl as any)._ttyInput.destroy();
         if ((rl as any)._ttyOutput) (rl as any)._ttyOutput.destroy();
@@ -327,20 +334,20 @@ async function main(): Promise<void> {
       console.log(
         `  ${colors.red}1${colors.reset} - MAJOR (${bumpVersion(
           currentVersion,
-          "major"
-        )}) - ${t("majorDesc")}`
+          "major",
+        )}) - ${t("majorDesc")}`,
       );
       console.log(
         `  ${colors.yellow}2${colors.reset} - MINOR (${bumpVersion(
           currentVersion,
-          "minor"
-        )}) - ${t("minorDesc")}`
+          "minor",
+        )}) - ${t("minorDesc")}`,
       );
       console.log(
         `  ${colors.green}3${colors.reset} - PATCH (${bumpVersion(
           currentVersion,
-          "patch"
-        )}) - ${t("patchDesc")}`
+          "patch",
+        )}) - ${t("patchDesc")}`,
       );
       console.log("");
 
@@ -352,8 +359,8 @@ async function main(): Promise<void> {
         typeChoice = await askChoice(
           rl,
           `${colors.bold}${t("choose")} (1/2/3) [${t(
-            "defaultLabel"
-          )}: ${defaultChoice}]:${colors.reset} `
+            "defaultLabel",
+          )}: ${defaultChoice}]:${colors.reset} `,
         );
 
         if (!typeChoice) {
@@ -394,7 +401,7 @@ async function main(): Promise<void> {
     const changelogContent = require("./updater").generateChangelogContent(
       finalVersion,
       finalType,
-      analysis
+      analysis,
     );
     previewChangelogChanges(changelogContent);
 
@@ -411,7 +418,7 @@ async function main(): Promise<void> {
   if (flags.test) {
     console.log("");
     console.log(
-      `${colors.yellow}⚠ TEST MODE${colors.reset} - Files will be updated but no git operations`
+      `${colors.yellow}⚠ TEST MODE${colors.reset} - Files will be updated but no git operations`,
     );
     console.log("");
   }
@@ -435,7 +442,7 @@ async function main(): Promise<void> {
   console.log(
     `${colors.green}${colors.bold}✓ ${t("versionUpdatedTo")} ${finalVersion}!${
       colors.reset
-    }`
+    }`,
   );
   console.log("");
 
@@ -467,11 +474,11 @@ async function main(): Promise<void> {
       }
     } else if (!githubInfo) {
       console.warn(
-        `${colors.yellow}⚠ No GitHub repository found in package.json${colors.reset}`
+        `${colors.yellow}⚠ No GitHub repository found in package.json${colors.reset}`,
       );
     } else if (!config.githubToken) {
       console.warn(
-        `${colors.yellow}⚠ No GitHub token configured. Set githubToken in .versionrc.js${colors.reset}`
+        `${colors.yellow}⚠ No GitHub token configured. Set githubToken in .versionrc.js${colors.reset}`,
       );
     }
   }
