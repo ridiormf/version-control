@@ -21,6 +21,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 
 
+
+## [3.0.2] - 2026-03-29
+
+### 🔄 Changed
+
+- **bin**: update smart-commit
+- **smart-commit**: update smart-commit and i18n
+
+### 🐛 Fixed
+
+- **src**: resolve issues
+
+
 ## [3.0.0] - 2026-03-29
 
 ### ✨ Added
